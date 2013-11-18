@@ -1,0 +1,169 @@
+module basic::cc
+
+import IO;
+import List;
+import String;
+import Exception;
+import ParseTree;
+
+import util::FileSystem;
+
+import lang::java::m3::Core;
+import lang::java::jdt::m3::Core;
+import lang::java::jdt::m3::AST;
+
+loc hsqldb = |project://hsqldb-2.3.1/|;
+loc smallsql = |project://smallsql0.21_src/|;
+
+loc outfile = |project://Series1/src/basic/outfile.txt|;
+
+loc demofile = |project://Series1/src/basic/demo.java|;
+
+public M3 m3fromEP() {
+	return createM3FromEclipseProject(smallsql);
+} 
+
+public int mccabe(Declaration m){
+	nodes = 0;
+	edges = 0;
+	connected = 0;
+	
+	visit(m) {
+		case \if(Expression condition, Statement thenBranch): 
+			{ edges += 2; nodes += 1; }
+			
+	  	case \if(Expression condition, Statement thenBranch, Statement elseBranch): 
+	  		{ edges += 2; nodes += 1; } 
+	  
+	    case \case(Expression expression):
+	    	{ edges += 2; nodes += 1; }
+	    	
+	    case \defaultCase():
+	    	{ edges += 2; nodes += 1; }
+	  
+	    /*
+	  	case \methodCall(bool isSuper, str name, list[Expression] arguments): 
+	  		{ print("methodcall "); edges += 1; nodes += 1; }
+	  		
+        case \methodCall(bool isSuper, Expression receiver, str name, list[Expression] arguments): 
+        	{ print("methodcall "); edges += 1; nodes += 1; }
+        */
+        
+        case \assert(Expression expression):
+        	{ nodes += 1; edges += 2; }
+        
+        case \assert(Expression expression, Expression message):
+        	{ nodes += 1; edges += 2; }
+        
+        case \while(Expression condition, Statement body):
+        	{ nodes += 1; edges += 2; }
+        	
+        case \foreach(Declaration parameter, Expression collection, Statement body):
+        	{ nodes += 1; edges += 2; }
+        	
+    	case \for(list[Expression] initializers, Expression condition, list[Expression] updaters, Statement body):
+    		{ nodes += 1; edges += 2; }
+    		
+    	case \for(list[Expression] initializers, list[Expression] updaters, Statement body):
+    		{ nodes += 1; edges += 2; }	
+    		
+    	case \do(Statement body, Expression condition):
+    		{ nodes += 1; edges += 2; }	
+        	 
+        case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl): 
+        	{ nodes += 1; edges += 1; connected += 1; }
+        	
+   		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions): 
+   			{ nodes += 1; edges += 1; connected += 1; }
+   			
+   		case \catch(Declaration exception, Statement body):
+   			{ nodes += 1; edges += 2; }
+   			
+   		case \return(Expression expression): 
+   			{ nodes += 1; connected += 1; }
+   			
+   		case \return(): 
+   			{ nodes += 1; connected += 1; }
+   			
+	}
+	
+	v = edges - nodes + connected;
+	
+	return v;
+}
+
+public int cyclo(Declaration m) {
+		    result = 0;
+		   
+		   /*
+		   print(m);
+		   print("\n");
+		   */
+		   
+		    visit(m) {
+	      case \assert(Expression expression): result += 1;
+	      case \assert(Expression expression, Expression message): result += 1;
+	      case \do(Statement body, Expression condition): result += 1;
+	      case \foreach(Declaration parameter, Expression collection, Statement body): result += 1;
+	      case \for(list[Expression] initializers, Expression condition, list[Expression] updaters, Statement body): result += 1;
+          case \for(list[Expression] initializers, list[Expression] updaters, Statement body): result += 1;
+          case \if(Expression condition, Statement thenBranch): result += 1;
+	  	  case \if(Expression condition, Statement thenBranch, Statement elseBranch): result += 2;
+	  	  case \switch(Expression expression, list[Statement] statements): result += 1;
+		  case \case(Expression expression): result += 1;
+		  case \while(Expression condition, Statement body): result += 1;
+	      case \catch(Declaration exception, Statement body): result += 1;
+		    }
+		    
+		    return result;
+}
+
+public void m3fromfile(loc file) {
+  model = createM3FromFile(file);
+  methodes = methods(model);
+  
+  allcc = [];
+  
+  for(g <- methodes) {
+      ast = getMethodAST(g, model=model);
+      c = mccabe(ast);
+      
+      ret = [c,file,g];
+      allcc + ret;
+       
+    }
+    
+    print(allcc);
+}
+
+public void m3fromProject(loc project) {
+	
+  result = [f | /file(f) <- crawl(project), f.extension == "java"];
+
+  totalcc = 0;
+  allcc = [];
+	  
+
+  for(fi <- result) {
+    model = createM3FromFile(fi);
+    methodes = methods(model);
+    
+    for(g <- methodes) {
+      ast = getMethodAST(g, model=model);
+      c = mccabe(ast);
+      print(c);
+      print(" - ");
+      print(fi);
+      print(" - ");
+      print(g);
+      totalcc = totalcc + c;
+      print("\n");
+    }
+  }
+  
+  print("Total cc \n");
+  print(totalcc);
+  
+  return;
+
+}

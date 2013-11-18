@@ -1,0 +1,21 @@
+public class Main {
+	
+  public static void example1() {
+	  
+	  if(true) {
+		  return 1
+	  } 
+		  
+	  if(true) {
+		  return 2;
+	  }	  
+	  
+  }
+	
+  public static void main(String[] args) {
+	  
+	 return;
+	  
+  }
+
+}

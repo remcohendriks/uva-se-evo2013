@@ -1,0 +1,41 @@
+public class Example2 {
+	
+	public static void node7() {
+		
+		
+	}
+	
+	public static void node8() {
+		
+		
+	}
+	
+	public static void main(String[] args) {
+		  
+		 return;
+		  
+	}
+	
+}
+
+public class Main {
+	
+  public static int example1() {
+	  
+	  if(true) {
+		  return 1; 
+	  } 
+		  
+	  if(true) {
+		  return 2;
+	  }	  
+	  
+  }
+	
+  public static void main(String[] args) {
+	  
+	 return;
+	  
+  }
+
+}

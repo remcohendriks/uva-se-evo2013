@@ -1,0 +1,20 @@
+public class Main {
+	
+  public static void main(String[] args) {
+	  int number = 1;
+	  
+	  if(number == 0) {
+		  printer();
+	  } else {
+		  printer();
+	  }
+	  
+	  if(number == 1) {
+		  printer();
+	  } else {
+		  printer();
+	  }
+	  
+  }
+
+}

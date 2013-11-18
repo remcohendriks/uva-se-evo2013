@@ -1,0 +1,44 @@
+public class Main {
+	
+  public static int example1() {
+	  
+	  if(true) {
+		  return 1; 
+	  } 
+		  
+	  if(true) {
+		  return 2;
+	  }	  
+	  
+  }
+  
+  public static int example2() {
+	  
+	  if(true) {
+		  // to 2
+		  
+		  if(true) {
+			  // to 6
+			  
+			  if(true) {
+				  // to 7
+			  }
+		  }
+		  
+	  } else {
+		  
+	  }
+		  
+	  if(true) {
+		  return 2;
+	  }	  
+	  
+  }
+	
+  public static void main(String[] args) {
+	  
+	 return;
+	  
+  }
+
+}

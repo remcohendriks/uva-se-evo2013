@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="hsqldb/integration/extAuthWithSpring/src"/>
+	<classpathentry kind="src" path="hsqldb/integration/hibernate_3_3_1/src"/>
+	<classpathentry kind="src" path="hsqldb/integration/hibernate/src"/>
+	<classpathentry kind="src" path="hsqldb/src"/>
+	<classpathentry exported="true" kind="lib" path="hsqldb/build/gradle-ivyxml-plugin-0.3.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="hsqldb/build/gradle-javaPropFile-plugin-0.6.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="hsqldb/build/gradle/wrapper/gradle-wrapper.jar"/>
+	<classpathentry exported="true" kind="lib" path="hsqldb/lib/hsqldb.jar"/>
+	<classpathentry exported="true" kind="lib" path="hsqldb/lib/sqltool.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/stevan/Desktop/UvA/Software Evolution/downloads/hibernate-distribution-3.6.10.Final/hibernate3.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/stevan/Desktop/UvA/Software Evolution/downloads/slf4j-1.7.5/slf4j-nop-1.7.5.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/stevan/Desktop/UvA/Software Evolution/downloads/slf4j-1.7.5/slf4j-api-1.7.5.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/stevan/Desktop/UvA/Software Evolution/downloads/commons-logging-1.1.3/commons-logging-1.1.3.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/stevan/Desktop/UvA/Software Evolution/downloads/commons-logging-1.1.3/commons-logging-api-1.1.3.jar"/>
+	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.5.0_22"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/stevan/Desktop/UvA/Software Evolution/workspace/smallsql0.21_src/lib/junit-3.8.1.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

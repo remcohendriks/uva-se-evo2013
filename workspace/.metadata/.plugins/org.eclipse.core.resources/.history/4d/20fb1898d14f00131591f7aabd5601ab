@@ -1,0 +1,17 @@
+public class Main {
+
+  public static void printer() {
+	  System.out.println("Hello, World!");
+  }
+	
+  public static void main(String[] args) {
+	  int number = 1;
+	  
+	  if(number == 0) {
+		  printer();
+	  } else {
+		  printer();
+	  }
+  }
+
+}
