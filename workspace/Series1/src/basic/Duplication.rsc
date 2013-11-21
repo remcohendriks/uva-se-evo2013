@@ -1,9 +1,12 @@
-module basis::Duplication
+module basic::Duplication
 
 // imports
 import lang::java::m3::Core;
 import lang::java::jdt::m3::Core;
 import lang::java::jdt::m3::AST;
+
+import basic::sig;
+import basic::Volume;
 
 import IO;
 import Set;
@@ -12,7 +15,6 @@ import List;
 import String;
 import DateTime;
 import util::Math;
-import basis::sig;
 
 /*
 testing: testing(Lines, Search);
@@ -122,10 +124,10 @@ public lrel[loc, loc, list[list[str]]] getDuplications(lrel[loc unit,list[str] l
 		for (int m <- [(n+1)..myListSize]) {
 			
 			// check for overlapping lines, not nessasary next to onother.
-			if ( size(myList[n].lines & myList[m].lines) >= DuplicationThreshold() ) {
+			if ( size(myList[n].lines & myList[m].lines) >= ThresholdDuplication() ) {
 			
 				// computed list of list of strings of then duplications
-				myTemp = findDupsLines(myList[m].lines, myList[n].lines, DuplicationThreshold());
+				myTemp = findDupsLines(myList[m].lines, myList[n].lines, ThresholdDuplication());
 				
 				// If Temp. result is not empty then add to the myEndResult
 				if (myTemp != []) myEndResult = myEndResult + <myList[n].unit, myList[m].unit, myTemp>;
@@ -197,7 +199,7 @@ public void summeryDuplication(M3 myModel, str myUintType) {
 
 	myStart = now();
 
-	myPath = "F:/01_Series/Workbench/Series1/data/"; // this must be change to work
+	myPath = "F:/01_Series/Workbench/Series1/data/";
 	myName = "Duplication";
 	myFile = genResultFileLoc(myPath, myName); 
 
@@ -210,7 +212,9 @@ public void summeryDuplication(M3 myModel, str myUintType) {
 	myLOLOS         = getUnitsWithLines(myLOU, ThresholdDuplication());
 	myDupOfUnits    = getDuplications(myLOLOS);
 	myResultMethods = sumAbsolute(myDupOfUnits, false);
-
+	myLOC           = CountLinesOfCodeFromM3(myModel, myUintType);
+	myPercentage    = round(((0.0 + myResultMethods[1]) / (0.0 + myLOC) * 100), 0.001);
+	myRanking       = dup2ranking(myResultMethods[1], myLOC);
 	myEnd = now();
 	myDuration = myEnd - myStart;
 	
@@ -218,9 +222,9 @@ public void summeryDuplication(M3 myModel, str myUintType) {
 	appendToFile(myFile, "Project  : <myProject>\r\n");
 	appendToFile(myFile, "Unit Type: <myUintType>\r\n");
 	appendToFile(myFile, "\r\n");
-	appendToFile(myFile, "Number of Lines of witch are Duplications with threshold of <DuplicationThreshold()>\r\n");
-	appendToFile(myFile, "- <myResultMethods[0]> methods with <myResultMethods[1]> duplicate lines\r\n");
-	appendToFile(myFile, "\r\n");
+	appendToFile(myFile, "Number of Lines of witch are Duplications with threshold of <ThresholdDuplication()>\r\n");
+	appendToFile(myFile, "<myResultMethods[0]> methods with <myResultMethods[1]> duplicate lines (<myPercentage>%)\r\n");
+	appendToFile(myFile, "Ranking: <myRanking> \r\n");
 	
 	// write duration to file
 	appendToFile(myFile, "Time to Compute:\r\n");
@@ -230,6 +234,9 @@ public void summeryDuplication(M3 myModel, str myUintType) {
 	// write data result of duplications to file
 	appendToFile(myFile, "Data Results:\r\n");
 	sumAbsoluteToFile(myFile, myDupOfUnits);
+	
+	println(myFile);
+	
 }
 
 
@@ -269,3 +276,17 @@ result = sumAbsolute(duplication);
 
 */  
 
+public  str dup2ranking(int myDuplication, int myTotalLOC) {
+
+	str myRanking = "";
+	
+	real myPercentage = round((0.0 + myDuplication) / myTotalLOC, 0.001);
+	println(myPercentage);
+	
+	if (myPercentage <= 0.03) myRanking = "++";
+	else if (myPercentage <= 0.05) myRanking = "+";
+	else if (myPercentage <= 0.10) myRanking = "o";
+	else if (myPercentage <= 0.20) myRanking = "-";
+	else myRanking = "--";
+	return myRanking;
+}
