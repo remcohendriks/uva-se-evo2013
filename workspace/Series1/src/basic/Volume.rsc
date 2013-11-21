@@ -67,7 +67,7 @@ public void summeryVolume(M3 myModel) {
 	// make a ranking on basis of Class, Method of File
 	myRankingClasses = my2rank(myManYearsClasses); 
 	myRankingMethods = my2rank(myManYearsMethods); 
-	myrankingFiles   = my2rank(myManYearsFiles); 
+	myRankingFiles   = my2rank(myManYearsFiles); 
 
 	myEnd = now();
 	myDuration = myEnd - myStart;
