@@ -1,4 +1,4 @@
-module Metrics::Volume
+module basic::Volume
 
 import lang::java::m3::Core;
 import lang::java::jdt::m3::Core;
@@ -10,7 +10,7 @@ import Set;
 import List;
 import String;
 import DateTime;
-import basis::sig;
+import basic::sig;
 
 // count all the lines of code of all the units / files
 public int CountNumberOfLines(list[loc] myListOfLoc) {
