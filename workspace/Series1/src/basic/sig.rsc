@@ -16,6 +16,8 @@ import util::Math;
 // |project://smallsql/|
 // |project://hsqldb/|
 
+public int ThresholdDuplication() = 6;
+
 // generate M3 model
 public M3 genModel(loc id) = createM3FromEclipseProject(id);
 
@@ -45,13 +47,11 @@ public list[loc] getListOfUnits(M3 myModel, str myTypeUnit) {
 	if (myTypeUnit == "method") { myListOfUnit = Set2List(genMethods(myModel));	}
 	if (myTypeUnit == "class")  { myListOfUnit = Set2List(genClasses(myModel));	}
 	
-	myListOfUnit = [X | X <- myListOfUnit, !(/juni/ := X.path)];
+	myListOfUnit = [X | X <- myListOfUnit, !(/junit/ := X.path)];
 	myListOfUnit = [X | X <- myListOfUnit, !(/test/ := X.path)];
 	
 	return myListOfUnit;
 }
-
-public int DuplicationThreshold() = 6;
 
 public list[loc] getListOfUnitsWithJUnit(M3 myModel, str myTypeUnit) {
 	
