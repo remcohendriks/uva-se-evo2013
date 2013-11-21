@@ -60,9 +60,9 @@ public void summeryVolume(M3 myModel) {
 	myLOCoboFiles   = CountLinesOfCodeFromProjectLoc(myModel[0]);
 
 	// make a ranking on basis of Class, Method of File
-	myManYearsClasses = loc2my("java", myLOCoboClasses); 
-	myManYearsMethods = loc2my("java", myLOCoboMethods); 
-	myManYearsFiles   = loc2my("java", myLOCoboFiles); 
+	myManYearsClasses = loc2my("Java", myLOCoboClasses); 
+	myManYearsMethods = loc2my("Java", myLOCoboMethods); 
+	myManYearsFiles   = loc2my("Java", myLOCoboFiles); 
 
 	// make a ranking on basis of Class, Method of File
 	myRankingClasses = my2rank(myManYearsClasses); 
