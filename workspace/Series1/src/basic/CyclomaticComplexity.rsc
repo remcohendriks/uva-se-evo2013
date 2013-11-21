@@ -5,7 +5,6 @@ import lang::java::jdt::m3::Core;
 import lang::java::jdt::m3::AST;
 
 import basis::sig;
-import Ranking::CyclomaticComplexity;
 import Metrics::Volume;
 
 import IO;
@@ -63,7 +62,7 @@ public rel[int idx, loc method, int cc] getListOfMethodsCC(list[loc] myListOfMet
 		myListOfMethodCC = myListOfMethodCC + {<n, myMethod, myCC>};
 		
 		// print result for progress 
-		println("Index: <n> | CC: <myCC> | method loc: <myMethod>");
+		println("Index: <n> | CC: <myCC>");
 		
 	}
 	
@@ -71,7 +70,24 @@ public rel[int idx, loc method, int cc] getListOfMethodsCC(list[loc] myListOfMet
 	
 }
 
-public list[int] getSummationsOfCC(rel[int, loc, int] myListOfMethodCC) {
+public void printCCofUnitToFile(loc myFile, rel[int idx, loc method, int cc] UnitCC) {
+
+	rel[loc mt, int cc] myRec = {};
+	list[int]           myListRec = [];
+	
+	for(int n <- [0 .. (size(UnitCC)-1)]) { 
+
+		myRec = UnitCC[n];
+		myListRec = [*myRec.cc];
+		myMethode = [*myRec.mt];
+			
+		// print result for progress 
+		appendToFile(myFile, "Index: <n> | CC: <myListRec[0]> | method loc: <myMethode[0]>\r\n");
+		
+	}
+}
+
+public list[int] getSummationsOfCC(rel[int idx, loc method, int cc] myListOfMethodCC) {
 
 	rel[loc mt, int cc] myRec = {};
 	list[int]             myListRec = [];
@@ -99,15 +115,15 @@ public list[int] getSummationsOfCC(rel[int, loc, int] myListOfMethodCC) {
 		if (myRiskRange == "21-50") myIdx = 2;
 		if (myRiskRange == "\> 50") myIdx = 3;
 		
-		mySum[myIdx] = mySum[myIdx] + CountLinesOfCodeFromSourceCode(getSourceCode(myMethode[0]));
+		mySum[myIdx] = mySum[myIdx] + size(removeComments(getListOfStrFromLoc(myMethode[0])));
 		myTot = 0.0  + mySum[0] + mySum[1] + mySum[2] + mySum[3];
 		
 		// print result for progress 
-		println("CC: <myCC>");
-		println("Index: 1 |  1-10 | LOC: <round((mySum[0] / myTot) * 100, 0.01)> %");
-		println("Index: 2 | 11-10 | LOC: <round((mySum[1] / myTot) * 100, 0.01)> %");
-		println("Index: 3 | 21-10 | LOC: <round((mySum[2] / myTot) * 100, 0.01)> %");
-		println("Index: 4 |  \> 50 | LOC: <round((mySum[3] / myTot) * 100, 0.01)> %");
+		//println("CC: <myCC>");
+		//println("Index: 1 |  1-10 | LOC: <round((mySum[0] / myTot) * 100, 0.01)> %");
+		//println("Index: 2 | 11-10 | LOC: <round((mySum[1] / myTot) * 100, 0.01)> %");
+		//println("Index: 3 | 21-10 | LOC: <round((mySum[2] / myTot) * 100, 0.01)> %");
+		//println("Index: 4 |  \> 50 | LOC: <round((mySum[3] / myTot) * 100, 0.01)> %");
 		
 		
 	}
@@ -120,30 +136,46 @@ public list[int] getSummationsOfCC(rel[int, loc, int] myListOfMethodCC) {
 public void summeryCyclomaticComplexity(M3 myModel) {
 
 	myStart = now();
+
+	myPath = "F:/01_Series/Workbench/Series1/data/";
+	myName = "CycolmaticComplexity";
+	myFile = genResultFileLoc(myPath, myName); 
+
+	writeFile(myFile, "Summery of <myName> of Project\r\n");
+	appendToFile(myFile, "------------------------------------------\r\n");
+
 	myProject = myModel[0];
 	
-	list[loc]          myListOfMethods     = Set2List(genMethods(myModel));
-	rel[int, loc, int] myListOfCCperMethod = getListOfMethodsCC(myListOfMethods);
-	list[int]          mySummationsOfCC    = getSummationsOfCC(myListOfCCperMethod); 
-	int                myTotal             = 0.0  + mySummationsOfCC[0] + 
-	                                                mySummationsOfCC[1] + 
-	                                                mySummationsOfCC[2] + 
-	                                                mySummationsOfCC[3];
+	list[loc]          myListOfUnits     = getListOfUnits(myModel, "method");
+	rel[int, loc, int] myListOfCCperUnit = getListOfMethodsCC(myListOfUnits);
+	list[int]          mySummationsOfCC  = getSummationsOfCC(myListOfCCperUnit); 
+	real               myTotal           = 0.0  + mySummationsOfCC[0] + 
+	                                              mySummationsOfCC[1] + 
+	                                              mySummationsOfCC[2] + 
+	                                              mySummationsOfCC[3];
+	str myRanking                        = summedcc2rank(mySummationsOfCC);
 	myEnd = now();
 	myDuration = myEnd - myStart;
 	
-	println("Summery of Cyclomatic Complexity of Project");
+	appendToFile(myFile, "Project : <myProject>\r\n");
+	appendToFile(myFile, "\r\n");	
 	
-	println("Project : <myProject>");
-
-	println("Cyclomatic Complexity: <myCC>");
-	println("  1-10 | LOC: <round((mySummationsOfCC[0] / myTot) * 100, 0.01)> %");
-	println(" 11-10 | LOC: <round((mySummationsOfCC[1] / myTot) * 100, 0.01)> %");
-	println(" 21-10 | LOC: <round((mySummationsOfCC[2] / myTot) * 100, 0.01)> %");
-	println("  \> 50 | LOC: <round((mySummationsOfCC[3] / myTot) * 100, 0.01)> %");
+	appendToFile(myFile, "Cyclomatic Complexity: <myCCRanking>\r\n");
+	appendToFile(myFile, "  1-10 | LOC: <round((mySummationsOfCC[0] / myTotal) * 100, 0.01)> %\r\n");
+	appendToFile(myFile, " 11-10 | LOC: <round((mySummationsOfCC[1] / myTotal) * 100, 0.01)> %\r\n");
+	appendToFile(myFile, " 21-10 | LOC: <round((mySummationsOfCC[2] / myTotal) * 100, 0.01)> %\r\n");
+	appendToFile(myFile, "  \> 50 | LOC: <round((mySummationsOfCC[3] / myTotal) * 100, 0.01)> %\r\n");
+	appendToFile(myFile, "\r\n");	
 		
-	println("Time passes:");
-	printDuration(myDuration); 
+	// write duration to file
+	appendToFile(myFile, "Time to Compute:\r\n");
+	printDurationToFile(myFile, myDuration); 
+	appendToFile(myFile, "\r\n");
+	
+	// write data result of cc to file
+	appendToFile(myFile, "Data Results:\r\n");
+	printCCofUnitToFile(myFile, myListOfCCperUnit);
+	
 
 }
 
@@ -177,4 +209,23 @@ public str rr2desc(str rr) {
 	if (rr == "21-50") return "complex, high risk";
 	if (rr == "\> 50") return "untestable, very high risk";
 	return "Unknown CC Risk Range!";
+}
+
+public str summedcc2rank(list[int] mySummedCC) {
+    str myRanking = ""; 
+	real myTotal = 0.0  + mySummedCC[0] + mySummedCC[1] + mySummedCC[2] + mySummedCC[3];
+ 	real myModarate  = ((0.0 + mySummedCC[1]) / myTotal);
+ 	real myHigh      = ((0.0 + mySummedCC[2]) / myTotal);
+ 	real myVeryHigh  = ((0.0 + mySummedCC[3]) / myTotal);
+ 	
+	
+ 	if ( (myModarate <= 0.25) && (myHigh <= 0.00) && (myVeryHigh <= 0.00) ) myRanking = "++";
+ 	if ( (myModarate <= 0.30) && (myHigh <= 0.05) && (myVeryHigh <= 0.00) ) myRanking = "+";
+ 	if ( (myModarate <= 0.40) && (myHigh <= 0.10) && (myVeryHigh <= 0.00) ) myRanking = "o";
+ 	if ( (myModarate <= 0.50) && (myHigh <= 0.15) && (myVeryHigh <= 0.05) ) myRanking = "-";
+ 	else myRanking = "--";
+ 	
+ 	println("moderate: <myModarate> | high: <myHigh> | Very High: <myVeryHigh> | Ranking: <myRanking>");
+	
+	return myRanking;
 }
