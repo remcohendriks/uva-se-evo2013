@@ -1,0 +1,442 @@
+module SigBasis
+
+// imports
+import lang::java::m3::Core;
+import lang::java::jdt::m3::Core;
+import lang::java::jdt::m3::AST;
+
+import IO;
+import Set;
+import Relation;
+import List;
+import String;
+import DateTime;
+import util::Math;
+
+// |project://smallsql/|
+// |project://hsqldb/|
+
+
+
+/*
+function getUnitMetrics computes
+- Lines of Code with comments
+- Linse of Code without comments
+- UnitSizeWithComments
+- UnitSizeWithoutComments
+- CyclomaticComplexity
+
+pre-condition:
+- myUnitLoc     must point to file, class or method from a M3 model
+- myPrintResult must be filled with true or false
+
+*/
+public rel[loc UnitLoc, 
+           list[str] LinesOfCode,
+           rel[int IncludingComments, 
+               int ExcludingComments] UnitSize,
+           int CyclomaticComplexity] 
+	getUnitMetrics(loc myUnitLoc, bool myPrintResult) {
+
+	// get lines of Code from the Unit
+	list[str] myLinesOfCode = getListOfStrFromLoc(myUnitLoc);
+	
+	// compute Unit Size
+	rel[int IncludingComments, int ExcludingComments] myUnitSize = {<size(myLinesOfCode), size(removeComments(myLinesOfCode))>};
+	
+	// Compute Cyclomatic Complexity
+	int myCyclomaticComplexity = getCyclomaticComplexity(getSourceCode(myUnitLoc)); 
+	
+	// print result
+	if (myPrintResult) {
+		println("Results for <myUnitLoc>");
+		println("Unit Size:");
+		println("- Including Comments: <[*myUnitSize.IncludingComments][0]>");
+		println("- Excluding Comments: <[*myUnitSize.ExcludingComments][0]>");
+		println("Cyclomatic Complexity: <myCyclomaticComplexity>");
+		println("Lines Of Code:");
+		for (int n <- [0..([*myUnitSize.IncludingComments][0])]) {
+			println("Lines[<int2str(n, 5)>] : <myLinesOfCode[n]>");
+		}
+	}
+	
+	// combine results
+	return {<myUnitLoc, myLinesOfCode, myUnitSize, myCyclomaticComplexity>};	
+}
+
+/* 
+Function FromUnitMetricsGetUnitLoc
+*/
+public loc FromUnitMetricsGetUnitLoc(rel[loc UnitLoc, 
+           list[str] LinesOfCode,
+           rel[int IncludingComments, 
+               int ExcludingComments] UnitSize,
+           int CyclomaticComplexity] myUnitMetric) {
+
+	return [*myUnitMetric].UnitLoc[0];
+}  
+/* 
+Function FromUnitMetricsGetUnitSizeIncludingComments
+*/
+public list[str] FromUnitMetricsGetLinesOfCode(rel[loc UnitLoc, 
+           list[str] LinesOfCode,
+           rel[int IncludingComments, 
+               int ExcludingComments] UnitSize,
+           int CyclomaticComplexity] myUnitMetric) {
+
+	return [*myUnitMetric].LinesOfCode[0];
+}           
+/* 
+Function FromUnitMetricsGetUnitSizeIncludingComments
+*/
+public int FromUnitMetricsGetUnitSizeIncludingComments(rel[loc UnitLoc, 
+           list[str] LinesOfCode,
+           rel[int IncludingComments, 
+               int ExcludingComments] UnitSize,
+           int CyclomaticComplexity] myUnitMetric) {
+
+	return [*[*myUnitMetric.UnitSize][0]][0].IncludingComments;
+} 
+/* 
+Function FromUnitMetricsGetUnitSizeExcludingComments
+*/
+public int FromUnitMetricsGetUnitSizeExcludingComments(rel[loc UnitLoc, 
+           list[str] LinesOfCode,
+           rel[int IncludingComments, 
+               int ExcludingComments] UnitSize,
+           int CyclomaticComplexity] myUnitMetric) {
+
+	return [*[*myUnitMetric.UnitSize][0]][0].ExcludingComments;
+} 
+/* 
+Function FromUnitMetricsGetCyclomaticComplexity
+*/
+public int FromUnitMetricsGetCyclomaticComplexity(rel[loc UnitLoc, 
+           list[str] LinesOfCode,
+           rel[int IncludingComments, 
+               int ExcludingComments] UnitSize,
+           int CyclomaticComplexity] myUnitMetric) {
+
+	return [*myUnitMetric.CyclomaticComplexity][0];
+}
+
+
+/*
+Function getListOfUnitMetrics computes
+- list of Unit Metric as in getUnitMetrics
+
+pre-condition:
+- myListOfUnits   must be filled with loc to Files, Classes or Methods from a M3 model
+- myPrintResults  must be filled with true or false, if true the result of getUnitMetric is printed else not
+- myPrintProgress must be filled with true or false, if true the progres of looping thought the listOfUnits is printed else not
+
+post-condition
+- list of getUnitMetrics
+
+*/
+public list[rel[loc UnitLoc, 
+           list[str] LinesOfCode,
+           rel[int IncludingComments, 
+               int ExcludingComments] UnitSize,
+           int CyclomaticComplexity]] 
+	getListOfUnitMetrics(list[loc] myListOfUnits, 
+	                     bool myPrintResult,
+	                     bool myPrintProgress) {
+
+	list[rel[loc UnitLoc, 
+           list[str] LinesOfCode,
+           rel[int IncludingComments, 
+               int ExcludingComments] UnitSize,
+           int CyclomaticComplexity]] myListOfUnitMetrics = [];
+	
+	int myListOfUnitsSize = size(myListOfUnits);
+           
+	for (int n <- [0..myListOfUnitsSize]) {
+	
+		// build myListOfUnitMetrics
+		myListOfUnitMetrics = myListOfUnitMetrics + getUnitMetrics(myListOfUnits[n], myPrintResult);
+		
+		// show progress
+		if (myPrintProgress) {println("Completed: <n+1> ToDo: <(myListOfUnitsSize - n- 1)>"); }
+	}
+	
+	return myListOfUnitMetrics;
+}
+public int FromListOfUnitMetricsSumLinesOfCode(list[rel[loc UnitLoc, 
+                                                    list[str] LinesOfCode,
+                                                    rel[int IncludingComments, 
+                                                        int ExcludingComments] UnitSize,
+                                                    int CyclomaticComplexity]] myListOfUnitMetric, 
+                                               bool IncludingComments) {
+                                              
+    if (IncludingComments) return (0 | it + e | int e <- [ FromUnitMetricsGetUnitSizeIncludingComments(X) | X <- myListOfUnitMetric]);                                                              
+	else                   return (0 | it + e | int e <- [ FromUnitMetricsGetUnitSizeExcludingComments(X) | X <- myListOfUnitMetric]);
+	
+}
+
+public int getCyclomaticComplexity(str myExperssionString) {
+
+	// http://www.leepoint.net/notes-java/principles_and_practices/complexity/complexity-java-method.html
+	list[str] myCCparam = ["return",
+	        "if", "else", "case", "default",
+	        "for", "while", "do-while", "break", "continue", 
+	        "&&", "||", "?", ":", 
+	        "catch", "finally", "throw", 
+	        "start()"];
+	        
+	int myCounter = 1;
+	int mySize    = 0;
+	
+	for(int n <- [0 .. (size(myCCparam))]) { 
+	
+		mySize = size(findAll(myExperssionString, myCCparam[n]));
+		
+		if ((myCCparam[n] == "return") && (mySize >= 1)) mySize = mySize - 1;	
+		
+		myCounter = myCounter + mySize;
+	}
+
+	return myCounter;	
+}
+
+/*
+function make a list of all the unit with there lines of code of those unit 
+with more or equal lines too the threshold
+*/
+public lrel[loc,list[str]] 
+       getUnitsWithLines(list[rel[loc UnitLoc, 
+                              list[str] LinesOfCode,
+                              rel[int IncludingComments, 
+                                  int ExcludingComments] UnitSize,
+                              int CyclomaticComplexity]] myListOfUnits, 
+                         int myThreshold) {
+	return [ <FromUnitMetricsGetUnitLoc(X),FromUnitMetricsGetLinesOfCode(X)> | X <- myListOfUnits, FromUnitMetricsGetUnitSizeExcludingComments(X) >= myThreshold];
+}
+
+/*
+testing: testing(Lines, Search);
+list[str] myLines  = ["C", "D", "B", "C", "F", "B", "C", "D", "E", "F"];
+list[str] mySearch = ["A", "B", "C", "D", "E"];
+*/
+public void test_findDupsLines() {
+	
+	list[str] Lines  = ["C", "D", "B", "C", "F", "B", "C", "D", "E", "F"];
+	list[str] Search = ["A", "B", "C", "D", "E"];
+	int       Threshold = 2;
+	
+	println("Found1 : <findDupsLines(Lines, Search, Threshold)>");
+	//println("Found2 : <findDupsLines2(Lines, Search, Threshold)>");
+	println("Expect: <[["B","C"],["B","C","D","E"],["C", "D"]]>");
+	println("Threshold : <Threshold>");
+	println("Lines     : <Lines>");
+	println("Search    : <Search>");
+	
+}
+public list[list[str]] getDuplicatedLines(list[str] myLines, list[str] mySearch, int myThreshold) {
+			
+	int myCount = 0;
+	int IdxLines = 0;
+	int MaxLines = size(myLines);
+	
+	int IdxBegin  = 0;
+	int IdxSearch = 0;
+	int MaxSearch = size(mySearch);
+	
+	list[list[str]] myResult = [];
+	list[str]       temp = [];
+	
+	do {	
+		
+		// init IdxLines and  IdxSearch;
+		IdxSearch = IdxBegin;
+		IdxLines = 0;
+		
+		do {
+			// print lines that are compared
+		    //println("mySearch[<IdxSearch>] = <mySearch[IdxSearch]>, myLines[<IdxLines>] = <myLines[IdxLines]> myLines: <myLines> Temp: <temp> Count: <myCount> Result: <result>");
+
+		    // check if line are equal
+			if (mySearch[(IdxSearch)] == myLines[IdxLines]) {
+		    
+		    	// remember what was found
+		    	temp = temp + mySearch[(IdxSearch)]; 	
+		    	
+		    	// increment Counter
+		    	myCount = myCount + 1;
+		    	
+		    	// make line blank so there will be no match on it.
+		    	myLines[(IdxLines)] = ""; 
+		    	
+		    	// increment Indexes of myLines and mySearch
+				IdxSearch = IdxSearch + 1;
+				IdxLines = IdxLines + 1;
+				
+			}
+			else {
+			
+				// remember temp found if greater or equal too threshold and reset Counter
+				if ((temp != []) && (myCount >= myThreshold)) myResult = myResult + [temp]; 
+				temp = [];
+				myCount = 0;
+				
+				// initialize IdxSearch to start from the top again
+				IdxSearch = IdxBegin;
+						
+				// increament IdxLines 
+				IdxLines = IdxLines + 1;         
+			}
+			
+		} while ( ( IdxLines < MaxLines ) && ( IdxSearch < MaxSearch ) );
+
+		// remember temp found if greater or equal too threshold and reset Counter
+		if ((temp != []) && (myCount >= myThreshold)) myResult = myResult + [temp]; 
+		temp = [];
+		myCount = 0; 
+		IdxBegin = IdxBegin + 1;  
+		
+	} while ( ( IdxBegin < MaxSearch ) && ( size(mySearch & myLines) >= myThreshold ) );
+
+	// return Result
+	return myResult;
+
+}
+
+/*
+function find duplication in unit lines of code
+*/
+/*
+function find duplication in unit lines of code
+*/
+public lrel[loc, loc, list[list[str]]] getDuplications(lrel[loc unit,list[str] lines] myList, bool myPrintProgress) {
+
+	// define local parameters
+	int                             myListSize  = size(myList) - 1;
+	list[list[str]]                 myTemp      = [];
+	lrel[loc, loc, list[list[str]]] myEndResult = [];
+	
+	// for ever n-th Unit do
+	for (int n <- [0..myListSize]) {
+		
+		// show progress
+		if (myPrintProgress) {println("Completed: <n+1> ToDo: <(myListSize - n- 1)>"); }
+		
+		// for ever m-th Unit do
+		for (int m <- [(n+1)..myListSize]) {
+			
+			// check for overlapping lines, not nessasary next to onother.
+			if ( size(myList[n].lines & myList[m].lines) >= ThresholdDuplication() ) {
+			
+				// computed list of list of strings of then duplications
+				myTemp = getDuplicatedLines(myList[m].lines, myList[n].lines, ThresholdDuplication());
+				
+				// If Temp. result is not empty then add to the myEndResult
+				if (myTemp != []) myEndResult = myEndResult + <myList[n].unit, myList[m].unit, myTemp>;
+				
+			}
+		}
+	}
+	
+	// return the End Result
+	return myEndResult;
+}
+
+
+public int ThresholdDuplication() = 6;
+
+// generate M3 model
+public M3 genModel(loc id) = createM3FromEclipseProject(id);
+
+// get list of location of units filtered on test or junit
+public list[loc] getListOfUnits(M3 myModel, str myUnitType) {
+	return [X | X <- getListOfUnitsWithTestCases(myModel, myUnitType), !(/junit/ := X.path), !(/test/ := X.path)];
+}
+
+// get list of location of units, 
+public list[loc] getListOfUnitsWithTestCases(M3 myModel, str myUnitType) {
+	list[loc] myListOfUnit = [];
+	if (myUnitType == "method") { myListOfUnit = [*methods(myModel)]; }
+	if (myUnitType == "class")  { myListOfUnit = [*classes(myModel)]; }
+	if (myUnitType == "file")   { myListOfUnit = getFilesFromLoc(myModel[0]); }
+	return myListOfUnit;
+}
+
+// Get a list of files
+public list[loc] getFilesFromLoc(loc myPath) {
+	
+	// stevan Pavlicic heeft dit bedacht
+	myList = listEntries(myPath);
+	
+	// get files form myPath
+	myListOfLoc = [(myPath + X) | X <- myList, isFile(myPath + X), endsWith(X, ".java")];
+
+	// get files from myPath if directory 
+	myListOfLoc = myListOfLoc + ([] | it + getFilesFromLoc(myPath + e) | str e <- myList);
+
+	// remove junit / test files from list of loc
+	myListOfLoc = [X | X <- myListOfLoc, !(/junit/ := X.path)];
+	myListOfLoc = [X | X <- myListOfLoc, !(/test/ := X.path)];
+	
+	return myListOfLoc;
+
+}
+
+// get list of Strings form Loc
+public list[str] getListOfStrFromLoc(loc myLoc) = readFileLines(myLoc);
+
+// remove tabs and comments
+public list[str] removeComments(list[str] myListOfStr) {
+	
+	int n = 0;
+	
+	do {
+		// removing comment block
+		if (startsWith(myListOfStr[n], "/*")) { // start of commenting found
+			if (endsWith(myListOfStr[n], "*/")) { // remove commented line
+				myListOfStr = delete(myListOfStr, n);
+			}
+			else {
+				do {// remove lines of comment block
+					myListOfStr = delete(myListOfStr, n);
+				} while (!contains(myListOfStr[n], "*/"));
+			}
+			myListOfStr = delete(myListOfStr, n); // remove line with '*/'
+		} 
+		// increment n
+		n = n + 1;
+	} while (n < size(myListOfStr));
+
+	// trim line of String and remove /t 'tabs'	
+	myListOfStr = [trim(replaceAll(X, "\t","")) | X <- myListOfStr];
+	
+	// remove empty lines
+	myListOfStr = [X | X <- myListOfStr, X != ""];
+	
+	// remove commented lines
+	myListOfStr = [X | X <- myListOfStr, !startsWith(X, "//")];
+	
+	return myListOfStr;
+}
+
+// get Source Code
+public str getSourceCode(loc locSourceCode) = readFile(locSourceCode);
+
+// format int 2 str by adding number of blacks
+public str int2str(int myInt, int myPositions) {
+	if (myInt < 0 || myInt > 99999 || myPositions < 1 || myPositions > 10) {
+		return "myInt must be betweeen 0 and 99999, myPositions must be between 1 and 10";
+	}
+	if (myInt >=0 && myInt <=    9) return repeat(" ", (myPositions-1)) + "<myInt>";
+	if (myInt >=0 && myInt <=   99) return repeat(" ", (myPositions-1)) + "<myInt>";
+	if (myInt >=0 && myInt <=  999) return repeat(" ", (myPositions-1)) + "<myInt>";
+	if (myInt >=0 && myInt <= 9999) return repeat(" ", (myPositions-1)) + "<myInt>";
+	return "myInt must be betweeen 0 and 99999, myPositions must be between 1 and 10";
+}
+
+// repeat a str for n times
+public str repeat(str myStr, int myRepeat) {
+	str myRepeatedStr = "";
+	for (int n <- [1..myRepeat]) {
+		myRepeatedStr = myRepeatedStr + myStr;
+	}
+	return myRepeatedStr;
+}
