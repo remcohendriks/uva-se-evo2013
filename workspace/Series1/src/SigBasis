@@ -49,14 +49,14 @@ public rel[loc UnitLoc,
 	
 	// print result
 	if (myPrintResult) {
-		println("Results for <myUnitLoc>");
-		println("Unit Size:");
-		println("- Including Comments: <[*myUnitSize.IncludingComments][0]>");
-		println("- Excluding Comments: <[*myUnitSize.ExcludingComments][0]>");
-		println("Cyclomatic Complexity: <myCyclomaticComplexity>");
-		println("Lines Of Code:");
+		println("getUnitMetrics | Results for <myUnitLoc>");
+		println("getUnitMetrics | Unit Size:");
+		println("getUnitMetrics | - Including Comments: <[*myUnitSize.IncludingComments][0]>");
+		println("getUnitMetrics | - Excluding Comments: <[*myUnitSize.ExcludingComments][0]>");
+		println("getUnitMetrics | Cyclomatic Complexity: <myCyclomaticComplexity>");
+		println("getUnitMetrics | Lines Of Code:");
 		for (int n <- [0..([*myUnitSize.IncludingComments][0])]) {
-			println("Lines[<int2str(n, 5)>] : <myLinesOfCode[n]>");
+			println("getUnitMetrics | Lines[<int2str(n, 5)>] : <myLinesOfCode[n]>");
 		}
 	}
 	
@@ -157,7 +157,7 @@ public list[rel[loc UnitLoc,
 		myListOfUnitMetrics = myListOfUnitMetrics + getUnitMetrics(myListOfUnits[n], myPrintResult);
 		
 		// show progress
-		if (myPrintProgress) {println("Completed: <n+1> ToDo: <(myListOfUnitsSize - n- 1)>"); }
+		if (myPrintProgress) {println("getListOfUnitMetrics | Completed: <n+1> ToDo: <(myListOfUnitsSize - n- 1)>"); }
 	}
 	
 	return myListOfUnitMetrics;
@@ -212,6 +212,9 @@ public lrel[loc,list[str]]
                          int myThreshold) {
 	return [ <FromUnitMetricsGetUnitLoc(X),FromUnitMetricsGetLinesOfCode(X)> | X <- myListOfUnits, FromUnitMetricsGetUnitSizeExcludingComments(X) >= myThreshold];
 }
+
+// Theshold for Duplication
+public int ThresholdDuplication() = 6;
 
 /*
 testing: testing(Lines, Search);
@@ -318,7 +321,7 @@ public lrel[loc, loc, list[list[str]]] getDuplications(lrel[loc unit,list[str] l
 	for (int n <- [0..myListSize]) {
 		
 		// show progress
-		if (myPrintProgress) {println("Completed: <n+1> ToDo: <(myListSize - n- 1)>"); }
+		if (myPrintProgress) {println("getDuplications | Completed: <n+1> ToDo: <(myListSize - n- 1)>"); }
 		
 		// for ever m-th Unit do
 		for (int m <- [(n+1)..myListSize]) {
@@ -340,8 +343,37 @@ public lrel[loc, loc, list[list[str]]] getDuplications(lrel[loc unit,list[str] l
 	return myEndResult;
 }
 
+/*
+Function computes the number of unit and lines of code that are duplications
+*/
+public list[int] sumDuplications(lrel[loc methodN, loc methodM, list[list[str]] lines] myDuplications, bool myDisplay) {
+	
+	set[loc]  myUnitSet   = {};
+	int       myLineCount = 0;
+	
+	for (int n <- [0..(size(myDuplications))]) {
+	
+		// add Unit N and Unit M to the set of Units to 
+		myUnitSet = myUnitSet + {myDuplications[n].methodN} + {myDuplications[n].methodM};
+	
+		// display Unit N and Unit M
+		if (myDisplay) { println("Result[<n>]:\nUnit[n]: <myDuplications[n].methodN>\nUnit[m]: <myDuplications[n].methodM> ");	}
+		
+		for (int m <- [0..(size(myDuplications[n].lines))]) {
+	
+			// display lines of duplicated code
+			if (myDisplay) { for (int l <- [0..(size(myDuplications[n].lines[m])-1)]) {	println("Line[<m>][<l>]: <myDuplications[n].lines[m][l]>");	} }
 
-public int ThresholdDuplication() = 6;
+			// sum results
+			myLineCount = myLineCount + size(myDuplications[n].lines[m]);
+	
+		}
+	}
+	
+	// return the size of the set of units and the count of the lines.
+	return [size(myUnitSet), myLineCount];
+}
+
 
 // generate M3 model
 public M3 genModel(loc id) = createM3FromEclipseProject(id);
@@ -425,10 +457,11 @@ public str int2str(int myInt, int myPositions) {
 	if (myInt < 0 || myInt > 99999 || myPositions < 1 || myPositions > 10) {
 		return "myInt must be betweeen 0 and 99999, myPositions must be between 1 and 10";
 	}
-	if (myInt >=0 && myInt <=    9) return repeat(" ", (myPositions-1)) + "<myInt>";
-	if (myInt >=0 && myInt <=   99) return repeat(" ", (myPositions-1)) + "<myInt>";
-	if (myInt >=0 && myInt <=  999) return repeat(" ", (myPositions-1)) + "<myInt>";
-	if (myInt >=0 && myInt <= 9999) return repeat(" ", (myPositions-1)) + "<myInt>";
+	if (myInt >=0 && myInt <=     9) return repeat(" ", (myPositions-1)) + "<myInt>";
+	if (myInt >=0 && myInt <=    99) return repeat(" ", (myPositions-2)) + "<myInt>";
+	if (myInt >=0 && myInt <=   999) return repeat(" ", (myPositions-3)) + "<myInt>";
+	if (myInt >=0 && myInt <=  9999) return repeat(" ", (myPositions-4)) + "<myInt>";
+	if (myInt >=0 && myInt <= 99999) return repeat(" ", (myPositions-5)) + "<myInt>";
 	return "myInt must be betweeen 0 and 99999, myPositions must be between 1 and 10";
 }
 
