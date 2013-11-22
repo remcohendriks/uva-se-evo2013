@@ -199,6 +199,46 @@ public int getCyclomaticComplexity(str myExperssionString) {
 	return myCounter;	
 }
 
+public int getCyclomaticComplexityWithAST(M3 myModel, loc myUnitLoc) {
+
+	myAST = getMethodAST(myUnitLoc, model=myModel);
+
+	myNodes = 0;
+	myEdges = 0;
+	myConnected = 0;
+	
+	visit(myAST) {
+		case \if(Expression condition, Statement thenBranch):                                                            { myEdges += 2; myNodes += 1; }
+	  	case \if(Expression condition, Statement thenBranch, Statement elseBranch):                                      { myEdges += 2; myNodes += 1; } 
+	    case \case(Expression expression):                                                                               { myEdges += 2; myNodes += 1; }
+	    case \defaultCase():                                                                                             { myEdges += 2; myNodes += 1; }
+		case \assert(Expression expression):                                                                             { myNodes += 1; myEdges += 2; }
+        case \assert(Expression expression, Expression message):                                                         { myNodes += 1; myEdges += 2; }
+        case \while(Expression condition, Statement body):                                                               { myNodes += 1; myEdges += 2; }
+        case \foreach(Declaration parameter, Expression collection, Statement body):                                     { myNodes += 1; myEdges += 2; }
+    	case \for(list[Expression] initializers, list[Expression] updaters, Statement body):                             { myNodes += 1; myEdges += 2; }	
+    	case \do(Statement body, Expression condition):                                                                  { myNodes += 1; myEdges += 2; }	
+   		case \catch(Declaration exception, Statement body):                                                              { myNodes += 1; myEdges += 2; }
+   		case \return(Expression expression):   	                                                                         { myNodes += 1; myEdges += 0; myConnected += 1; }
+   		case \return():    	                                                                                             { myNodes += 1; myEdges += 0; myConnected += 1; }
+   		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions):                 { myNodes += 1; myEdges += 1; myConnected += 1; }
+        case \for(list[Expression] initializers, Expression condition, list[Expression] updaters, Statement body):       { myNodes += 1; myEdges += 2; }
+    	case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl): { myNodes += 1; myEdges += 1; myConnected += 1; }
+   			
+	    /*
+	  	case \methodCall(bool isSuper, str name, list[Expression] arguments): 
+	  		{ print("methodcall "); myEdges += 1; myNodes += 1; }
+	  		
+        case \methodCall(bool isSuper, Expression receiver, str name, list[Expression] arguments): 
+        	{ print("methodcall "); myEdges += 1; myNodes += 1; }
+        */
+	}
+	
+	return myEdges - myNodes + myConnected;
+		
+}
+
+
 /*
 function make a list of all the unit with there lines of code of those unit 
 with more or equal lines too the threshold
