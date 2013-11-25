@@ -28,30 +28,12 @@ public void Summery(M3 myModel, str myRepportName) {
 	// remember the start time
 	myStart = now();
 	
-	myPath = "F:/01_Series/Workbench/Series1/data/";
+	myPath = "Series1/data/";
 	myFile = genResultFileLoc(myPath, myRepportName); 
+
 
 	// extract Project
 	myProject = myModel[0];
-
-	// Compute Summation Volume of Files
-	myListOfUnitMetrics           = getListOfUnitMetrics(getListOfUnits(myModel, "file"), false, true);
-	myFileVolume                  = ComputeVolume(myListOfUnitMetrics, "Files");
-	
-	// Compute Metrics on the basis of Classes
-	myListOfUnitMetrics           = getListOfUnitMetrics(getListOfUnits(myModel, "class"), false, true);
-	myClassesVolume               = ComputeVolume(myListOfUnitMetrics, "Classes");
-	myClassesUnitSize             = ComputeUnitSize(myListOfUnitMetrics, "Classes");
-	myClassesCyclomaticComplexity = ComputeCyclomaticComplexity(myListOfUnitMetrics, "Classes");
-	myClassesDuplicatedLines      = ComputeDuplicatedLines(myListOfUnitMetrics, "Classes");
-	
-	// Compute Metrics on the basis of Methods
-	myListOfUnitMetrics           = getListOfUnitMetrics(getListOfUnits(myModel, "method"), false, true);
-	myMethodsVolume               = ComputeVolume(myListOfUnitMetrics, "Methods");
-	myMethodsUnitSize             = ComputeUnitSize(myListOfUnitMetrics, "Methods");
-	myMethodsCyclomaticComplexity = ComputeCyclomaticComplexity(myListOfUnitMetrics, "Methods");
-	myMethodsDuplicatedLines      = ComputeDuplicatedLines(myListOfUnitMetrics, "Classes");
-
 
 	// Print Title Repport
 	writeFile(myFile, "Summery of <myRepportName> of Project\r\n");
@@ -62,20 +44,57 @@ public void Summery(M3 myModel, str myRepportName) {
 	appendToFile(myFile, "Project under review: <myProject>\r\n");
 	appendToFile(myFile, "\r\n");	
 	
+	// Compute Summation Volume of Files
+	//myListOfUnitMetrics           = getListOfUnitMetrics(getListOfUnits(myModel, "file"), false, true, myModel);
+	//myFileVolume                  = ComputeVolume(myListOfUnitMetrics, "Files");
+	
 	// Print the metrics on Volume on the basis of the Files too myFile.
-	PrintToFileVolume(myFile, myFileVolume);
+	//PrintToFileVolume(myFile, myFileVolume);
+	
+	// remember the end time for computing the metrics
+	//myEnd = now();
+	//myDuration = myEnd - myStart;
+
+	//// write duration to file
+	//appendToFile(myFile, "Time to Compute:\r\n");
+	//printDurationToFile(myFile, myDuration); 
+	//appendToFile(myFile, "\r\n");
+
+	// Compute Metrics on the basis of Classes
+	//myListOfUnitMetrics    = getListOfUnitMetrics(getListOfUnits(myModel, "class"), false, true);
+	//myVolume               = ComputeVolume(myListOfUnitMetrics, "Classes");
+	//myUnitSize             = ComputeUnitSize(myListOfUnitMetrics, "Classes");
+	//myCyclomaticComplexity = ComputeCyclomaticComplexity(myListOfUnitMetrics, "Classes");
+	//myDuplicatedLines      = ComputeDuplicatedLines(myListOfUnitMetrics, "Classes");
 	
 	// Print the metrics on Volume on the basis of the Classes too myFile.
-	PrintToFileVolume(myFile, myClassesVolume);
-	PrintToFileUnitSize(myFile, myClassesUnitSize);
-	PrintToFileCyclomaticComplexity(myFile, myClassesCyclomaticComplexity);
-	PrintToFileDuplicatedLines(myFile, myClassesDuplicatedLines);
+	//PrintToFileVolume(myFile, myVolume);
+	//PrintToFileUnitSize(myFile, myUnitSize);
+	//PrintToFileCyclomaticComplexity(myFile, myCyclomaticComplexity);
+	//PrintToFileDuplicatedLines(myFile, myDuplicatedLines);
+
+	// remember the end time for computing the metrics
+	//myEnd = now();
+	//myDuration = myEnd - myStart;
+
+//
+	// write duration to file
+	//appendToFile(myFile, "Time to Compute:\r\n");
+	//printDurationToFile(myFile, myDuration); 
+	//appendToFile(myFile, "\r\n");
+
+	// Compute Metrics on the basis of Methods
+	myListOfUnitMetrics    = getListOfUnitMetrics(getListOfUnits(myModel, "method"), false, false, myModel);
+	myVolume               = ComputeVolume(myListOfUnitMetrics, "Methods");
+	myUnitSize             = ComputeUnitSize(myListOfUnitMetrics, "Methods");
+	myCyclomaticComplexity = ComputeCyclomaticComplexity(myListOfUnitMetrics, "Methods");
+	myDuplicatedLines      = ComputeDuplicatedLines(myListOfUnitMetrics, "Methods");
 
 	// Print the metrics on Volume on the basis of the Methods too myFile.
-	PrintToFileVolume(myFile, myMethodsVolume);
-	PrintToFileUnitSize(myFile, myMethodsUnitSize);
-	PrintToFileCyclomaticComplexity(myFile, myMethodsCyclomaticComplexity);
-	PrintToFileDuplicatedLines(myFile, myMethodsDuplicatedLines);
+	PrintToFileVolume(myFile, myVolume);
+	PrintToFileUnitSize(myFile, myUnitSize);
+	PrintToFileCyclomaticComplexity(myFile, myCyclomaticComplexity);
+	PrintToFileDuplicatedLines(myFile, myDuplicatedLines);
 
 	// remember the end time for computing the metrics
 	myEnd = now();
@@ -87,11 +106,11 @@ public void Summery(M3 myModel, str myRepportName) {
 	appendToFile(myFile, "\r\n");
 	
 	// write data result of cc to file
-	appendToFile(myFile, "Method Data Results Unit Metrics of Unit Size and Cyclomatic Complexity:\r\n");
-	PrintListOfUnitMetrics(myFile, myListOfUnitMetrics);	
+	//appendToFile(myFile, "Method Data Results Unit Metrics of Unit Size and Cyclomatic Complexity:\r\n");
+	//PrintListOfUnitMetrics(myFile, myListOfUnitMetrics);	
 	
-	appendToFile(myFile, "Method Data Results Unit Metrics of Duplications:\r\n");
-	PrintToFileDuplications(myFile, myMethodsDuplicatedLines);
+	//appendToFile(myFile, "Method Data Results Unit Metrics of Duplications:\r\n");
+	//PrintToFileDuplications(myFile, [*myDuplicatedLines.Duplications][0], false);
 	
 	println(myFile);		
 }
@@ -124,7 +143,8 @@ public rel[str Type, list[int] Summation, int Total, str Ranking] ComputeCycloma
 	myRanking     = summedcc2rank(mySummations, myTotal);
 	return {<Type, mySummations, myTotal, myRanking>};
 }
-public rel[str Type, lrel[loc, loc, list[list[str]]] DuplicatedLines, rel[int Units, int Lines] NumberOf, int Total, real Percentage, str Ranking] ComputeDuplicatedLines(myListOfUnitMetrics, str Type) {
+public rel[str Type, lrel[loc UnitN,loc UnitM, lrel[int IdxUnitM,int IdxUnitN] Index] Duplications,rel[int Units, int Lines] NumberOf, int Total ,real Percentage ,str Ranking] ComputeDuplicatedLines(myListOfUnitMetrics, str Type) {
+           
 	// Compute Duplicated Lines in Classes
 	myListOfUnits     = getUnitsWithLines(myListOfUnitMetrics, ThresholdDuplication());
 	myDuplicatedLines = getDuplications(myListOfUnits, true);
@@ -132,7 +152,15 @@ public rel[str Type, lrel[loc, loc, list[list[str]]] DuplicatedLines, rel[int Un
 	myTotal           = FromListOfUnitMetricsSumLinesOfCode(myListOfUnitMetrics, false);
 	myPercentage      = round(((0.0 + mySummations[1]) / (0.0 + myTotal) * 100), 0.001);
 	myRanking         = dup2ranking(mySummations[1], myTotal);
-	return {<Type, myDuplicatedLines,{<mySummations[0], mySummations[1]>}, myTotal, myPercentage, myRanking>};		
+	
+	return {<Type, 
+	         myDuplicatedLines,
+	         {<mySummations[0], 
+	           mySummations[1]>}, 
+	         myTotal, 
+	         myPercentage, 
+	         myRanking>
+	         };		
 }
 
 // Print To File the Summation of Volume metrics
@@ -181,26 +209,40 @@ public void PrintToFileDuplicatedLines(myFile, myMetric) {
 	appendToFile(myFile, "Number of Lines of witch are Duplications with threshold of <ThresholdDuplication()>\r\n");
 	appendToFile(myFile, "<[*[*myMetric.NumberOf][0]][0].Units> <[*myMetric.Type][0]> with <[[*[*myMetric.NumberOf][0]][0].Lines]> duplicate lines (<[*myMetric.Percentage][0]>%)\r\n");
 }
-public void PrintListOfUnitMetrics(myFile, myListOfUnitMetric) {
-	mySize = size(myListOfUnitMetric);
-	appendToFile(myFile, "Idx;UnitLoc;UnitSizeIncludingComments;UnitSizeExcludingComments;CyclomaticComplexity\r\n");
+public void PrintListOfUnitMetrics(myFile, myListOfUnitMetrics) {
+	mySize = size(myListOfUnitMetrics);
+	appendToFile(myFile, "Idx;UnitSizeIncludingComments;UnitSizeExcludingComments;CyclomaticComplexity;UnitLoc\r\n");
 	for (int n <- [0..mySize]) {
-		myItem = myListOfUnitMetric[n];
-		appendToFile(myFile, "<n>;<myItem.UnitLoc>;<myItem.UnitSizeIncludingComments>;<myItem.UnitSizeExcludingComments>;<myItem.CyclomaticComplexity>\r\n");
+		myUnitLoc                   = FromUnitMetricsGetUnitLoc([*myListOfUnitMetrics][n]);
+		myUnitSizeIncludingComments = FromUnitMetricsGetUnitSizeIncludingComments([*myListOfUnitMetrics][n]);
+		myUnitSizeExcludingComments = FromUnitMetricsGetUnitSizeExcludingComments([*myListOfUnitMetrics][n]);
+		myCyclomaticComplexity      = FromUnitMetricsGetCyclomaticComplexity([*myListOfUnitMetrics][n]);
+		appendToFile(myFile, "<n>;<myUnitSizeIncludingComments>;<myUnitSizeExcludingComments>;<myCyclomaticComplexity>;<myUnitLoc>\r\n");
 	}
 }
 /*
 Function prints the number of unit and lines of code to a file.
 */
-public void PrintToFileDuplications(loc myFile, lrel[loc methodN, loc methodM, list[list[str]] lines] myDuplications) {
+public void PrintToFileDuplications(loc myFile, lrel[loc methodN, loc methodM, lrel[int IdxUnitM, int IdxUnitN] lines] myDuplications, bool myPrintToConsole) {
+	
 	for (int n <- [0..(size(myDuplications))]) {
-		appendToFile(myFile, "Result[<n>]:\nUnit[n]: <myDuplications[n].methodN>\nUnit[m]: <myDuplications[n].methodM> \r\n");
+		
+		if (myPrintToConsole) println("Result[<n>]:\nUnit[n]: <myDuplications[n].methodN>\nUnit[m]: <myDuplications[n].methodM> \r\n");
+		else appendToFile(myFile, "Result[<n>]:\nUnit[n]: <myDuplications[n].methodN>\nUnit[m]: <myDuplications[n].methodM> \r\n");
+	
+		myListOfStr = getListOfStrFromLoc(myDuplications[n].methodM);
+			
 		for (int m <- [0..(size(myDuplications[n].lines))]) {
-			for (int l <- [0..(size(myDuplications[n].lines[m])-1)]) {
-				appendToFile(myFile, "Line[<m>][<l>]: <myDuplications[n].lines[m][l]>\r\n");
+		
+			for (int l <- [0..(size(myDuplications[n].lines[m]))]) {
+		
+				if (myPrintToConsole) println("Line[<m>][<l>]: <myListOfStr(l)>\r\n");
+				else appendToFile(myFile, "Line[<m>][<l>]: <myListOfStr(l)>\r\n");
+		
 			}
 		}
 	}
+	
 }
 
 // prints Duration to Console
@@ -227,14 +269,13 @@ public void printDurationToFile(loc myFile, Duration myDuration) {
 public loc genResultFileLoc(str myPath, str myName) {
 	myDatetime = now();
 	myTimestamp = "<myDatetime.year>_<myDatetime.month>_<myDatetime.day>_<myDatetime.hour>_<myDatetime.minute>_<myDatetime.second>_";
-	myFile      = |file:///<myPath><myTimestamp><"ResultsOfMetric"><myName><".txt">|;
+	myFile      = |project://<myPath><myTimestamp><"ResultsOfMetric"><myName><".txt">|;
 	println(myFile);
 	return myFile;
 }
 
-
-@memo public void summerySmallsql() = Summery(genModel(|project://smallsql/|));
-@memo public void summeryHsqldb() = Summery(genModel(|project://hsqldb/|));
+@memo public void summerySmallsql() = Summery(genModel(|project://smallsql/|),"SMALLSQL");
+@memo public void summeryHsqldb() = Summery(genModel(|project://hsqldb/|), "HSQLDB");
 
 
 public str cc2rr(int CC) {
