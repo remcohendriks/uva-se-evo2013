@@ -36,7 +36,7 @@ public rel[loc UnitLoc,
            rel[int IncludingComments, 
                int ExcludingComments] UnitSize,
            int CyclomaticComplexity] 
-	getUnitMetrics(loc myUnitLoc, bool myPrintResult) {
+	getUnitMetrics(loc myUnitLoc, bool myPrintResult, M3 myModel) {
 
 	// get lines of Code from the Unit
 	list[str] myLinesOfCode = getListOfStrFromLoc(myUnitLoc);
@@ -45,7 +45,8 @@ public rel[loc UnitLoc,
 	rel[int IncludingComments, int ExcludingComments] myUnitSize = {<size(myLinesOfCode), size(removeComments(myLinesOfCode))>};
 	
 	// Compute Cyclomatic Complexity
-	int myCyclomaticComplexity = getCyclomaticComplexity(getSourceCode(myUnitLoc)); 
+	//int myCyclomaticComplexity = getCyclomaticComplexity(getSourceCode(myUnitLoc)); 
+	int myCyclomaticComplexity = getCyclomaticComplexityWithAST(myModel, myUnitLoc); 
 	
 	// print result
 	if (myPrintResult) {
@@ -141,7 +142,7 @@ public list[rel[loc UnitLoc,
            int CyclomaticComplexity]] 
 	getListOfUnitMetrics(list[loc] myListOfUnits, 
 	                     bool myPrintResult,
-	                     bool myPrintProgress) {
+	                     bool myPrintProgress, M3 myModel) {
 
 	list[rel[loc UnitLoc, 
            list[str] LinesOfCode,
@@ -154,7 +155,7 @@ public list[rel[loc UnitLoc,
 	for (int n <- [0..myListOfUnitsSize]) {
 	
 		// build myListOfUnitMetrics
-		myListOfUnitMetrics = myListOfUnitMetrics + getUnitMetrics(myListOfUnits[n], myPrintResult);
+		myListOfUnitMetrics = myListOfUnitMetrics + getUnitMetrics(myListOfUnits[n], myPrintResult, myModel);
 		
 		// show progress
 		if (myPrintProgress) {println("getListOfUnitMetrics | Completed: <n+1> ToDo: <(myListOfUnitsSize - n- 1)>"); }
@@ -219,25 +220,23 @@ public int getCyclomaticComplexityWithAST(M3 myModel, loc myUnitLoc) {
     	case \for(list[Expression] initializers, list[Expression] updaters, Statement body):                             { myNodes += 1; myEdges += 2; }	
     	case \do(Statement body, Expression condition):                                                                  { myNodes += 1; myEdges += 2; }	
    		case \catch(Declaration exception, Statement body):                                                              { myNodes += 1; myEdges += 2; }
-   		case \return(Expression expression):   	                                                                         { myNodes += 1; myEdges += 0; myConnected += 1; }
-   		case \return():    	                                                                                             { myNodes += 1; myEdges += 0; myConnected += 1; }
+   		case \return(Expression expression):   	                                                                         { myNodes += 1; myConnected += 1; }
+   		case \return():    	                                                                                             { myNodes += 1; myConnected += 1; }
    		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions):                 { myNodes += 1; myEdges += 1; myConnected += 1; }
         case \for(list[Expression] initializers, Expression condition, list[Expression] updaters, Statement body):       { myNodes += 1; myEdges += 2; }
     	case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl): { myNodes += 1; myEdges += 1; myConnected += 1; }
-   			
-	    /*
-	  	case \methodCall(bool isSuper, str name, list[Expression] arguments): 
-	  		{ print("methodcall "); myEdges += 1; myNodes += 1; }
-	  		
-        case \methodCall(bool isSuper, Expression receiver, str name, list[Expression] arguments): 
-        	{ print("methodcall "); myEdges += 1; myNodes += 1; }
-        */
+    	
+    	case \conditional(Expression expression, Expression thenBranch, Expression elseBranch):                          { myNodes += 1; myEdges += 2; }
+    	case \conditional(Expression expression, Expression thenBranch, Expression elseBranch):                          { myNodes += 1; myEdges += 2; }
+    	
+    	case \methodCall(bool isSuper, str name, list[Expression] arguments):                                            { myNodes += 1; myEdges += 1; }
+    	case \methodCall(bool isSuper, Expression receiver, str name, list[Expression] arguments):					     { myNodes += 1; myEdges += 1; }
+    		
 	}
 	
 	return myEdges - myNodes + myConnected;
 		
 }
-
 
 /*
 function make a list of all the unit with there lines of code of those unit 
@@ -250,7 +249,7 @@ public lrel[loc,list[str]]
                                   int ExcludingComments] UnitSize,
                               int CyclomaticComplexity]] myListOfUnits, 
                          int myThreshold) {
-	return [ <FromUnitMetricsGetUnitLoc(X),FromUnitMetricsGetLinesOfCode(X)> | X <- myListOfUnits, FromUnitMetricsGetUnitSizeExcludingComments(X) >= myThreshold];
+	return [ <FromUnitMetricsGetUnitLoc(X),removeComments(FromUnitMetricsGetLinesOfCode(X))> | X <- myListOfUnits, FromUnitMetricsGetUnitSizeExcludingComments(X) >= myThreshold];
 }
 
 // Theshold for Duplication
@@ -263,85 +262,53 @@ list[str] mySearch = ["A", "B", "C", "D", "E"];
 */
 public void test_findDupsLines() {
 	
-	list[str] Lines  = ["C", "D", "B", "C", "F", "B", "C", "D", "E", "F"];
+	list[str] Lines  = ["C", "D", "B", "C", "E", "B", "C", "D", "E", "F"];
 	list[str] Search = ["A", "B", "C", "D", "E"];
-	int       Threshold = 2;
+	int       Threshold = 4;
 	
-	println("Found1 : <findDupsLines(Lines, Search, Threshold)>");
-	//println("Found2 : <findDupsLines2(Lines, Search, Threshold)>");
-	println("Expect: <[["B","C"],["B","C","D","E"],["C", "D"]]>");
+	println("Found1    : <getDuplicatedLines(Lines, Search, Threshold)>");
 	println("Threshold : <Threshold>");
 	println("Lines     : <Lines>");
 	println("Search    : <Search>");
 	
 }
-public list[list[str]] getDuplicatedLines(list[str] myLines, list[str] mySearch, int myThreshold) {
-			
-	int myCount = 0;
-	int IdxLines = 0;
-	int MaxLines = size(myLines);
+//public list[lrel[int idx, str line]] getDuplications2(list[str] myLines, list[str] mySearch, int myThreshold) {
+public lrel[int IdxUnitM, int IdxUnitN] getDuplicatedLines(list[str] myLines, list[str] mySearch, int myThreshold) {
+
+	lrel[int IdxUnitM, int IdxUnitN] myResult = []; 
+	lrel[int IdxUnitM, int IdxUnitN] myReturn = [];
 	
-	int IdxBegin  = 0;
-	int IdxSearch = 0;
-	int MaxSearch = size(mySearch);
+	lrel[int IdxUnitM, int IdxUnitN] myIndexOfLines = sort([ <L, S> | S <- [0..size(mySearch)], L <- [0..size(myLines)], mySearch[S] == myLines[L], myLines[L] != "" ]);
 	
-	list[list[str]] myResult = [];
-	list[str]       temp = [];
+	int IdxBegin = 0;
 	
-	do {	
-		
-		// init IdxLines and  IdxSearch;
-		IdxSearch = IdxBegin;
-		IdxLines = 0;
-		
-		do {
-			// print lines that are compared
-		    //println("mySearch[<IdxSearch>] = <mySearch[IdxSearch]>, myLines[<IdxLines>] = <myLines[IdxLines]> myLines: <myLines> Temp: <temp> Count: <myCount> Result: <result>");
-
-		    // check if line are equal
-			if (mySearch[(IdxSearch)] == myLines[IdxLines]) {
-		    
-		    	// remember what was found
-		    	temp = temp + mySearch[(IdxSearch)]; 	
-		    	
-		    	// increment Counter
-		    	myCount = myCount + 1;
-		    	
-		    	// make line blank so there will be no match on it.
-		    	myLines[(IdxLines)] = ""; 
-		    	
-		    	// increment Indexes of myLines and mySearch
-				IdxSearch = IdxSearch + 1;
-				IdxLines = IdxLines + 1;
-				
-			}
-			else {
+	if (size(myIndexOfLines) >= myThreshold) {
+	
+		for (int n <- [0..(size(myIndexOfLines))]) {
 			
-				// remember temp found if greater or equal too threshold and reset Counter
-				if ((temp != []) && (myCount >= myThreshold)) myResult = myResult + [temp]; 
-				temp = [];
-				myCount = 0;
-				
-				// initialize IdxSearch to start from the top again
-				IdxSearch = IdxBegin;
-						
-				// increament IdxLines 
-				IdxLines = IdxLines + 1;         
-			}
+			//println(myIndexOfLines[n]);
+			if (n == IdxBegin) { myResult = [myIndexOfLines[n]]; } 
 			
-		} while ( ( IdxLines < MaxLines ) && ( IdxSearch < MaxSearch ) );
-
-		// remember temp found if greater or equal too threshold and reset Counter
-		if ((temp != []) && (myCount >= myThreshold)) myResult = myResult + [temp]; 
-		temp = [];
-		myCount = 0; 
-		IdxBegin = IdxBegin + 1;  
-		
-	} while ( ( IdxBegin < MaxSearch ) && ( size(mySearch & myLines) >= myThreshold ) );
-
-	// return Result
-	return myResult;
-
+			// chekc of last line index is 1 smaller. 
+			else if (myIndexOfLines[n].IdxUnitN == (myIndexOfLines[n-1].IdxUnitN + 1)) {
+				myResult += myIndexOfLines[n];
+			} 
+			
+			// detect end of hole list
+			if (n == (size(myIndexOfLines)-1) ) {
+				if (size(myResult) >= myThreshold) {myReturn += myResult; } 
+				myResult = [];
+			} 
+			// end of block			
+			else if (((myIndexOfLines[(n+1)].IdxUnitN -1) - (myIndexOfLines[n].IdxUnitN) != 0) ) {
+				if (size(myResult) >= myThreshold) {myReturn += myResult; } 
+				myResult = [];
+				IdxBegin = n + 1;
+			} 
+		}
+	}
+	return myReturn;
+	
 }
 
 /*
@@ -350,30 +317,42 @@ function find duplication in unit lines of code
 /*
 function find duplication in unit lines of code
 */
-public lrel[loc, loc, list[list[str]]] getDuplications(lrel[loc unit,list[str] lines] myList, bool myPrintProgress) {
+public lrel[loc UnitN, loc UnitM, lrel[int IdxUnitM, int IdxUnitN] Index ] getDuplications(lrel[loc unit,list[str] lines] myList, bool myPrintProgress) {
 
 	// define local parameters
-	int                             myListSize  = size(myList) - 1;
-	list[list[str]]                 myTemp      = [];
-	lrel[loc, loc, list[list[str]]] myEndResult = [];
+	int                            myListSize  = size(myList) - 1;
+ 	               lrel[int IdxUnitM, int IdxUnitN]  myTemp      = [];
+	lrel[loc UnitN, loc UnitM, lrel[int IdxUnitM, int IdxUnitN] Index] myEndResult = [];
 	
 	// for ever n-th Unit do
 	for (int n <- [0..myListSize]) {
-		
-		// show progress
-		if (myPrintProgress) {println("getDuplications | Completed: <n+1> ToDo: <(myListSize - n- 1)>"); }
+	
+		// make bucket list
+		myBucket = [ X |  X <- [(n+1)..myListSize], size(myList[n].lines & myList[X].lines) >= ThresholdDuplication() ];  
+		myBucketSize = size(myBucket);
 		
 		// for ever m-th Unit do
-		for (int m <- [(n+1)..myListSize]) {
+		//for (int m <- [(n+1)..myListSize]) {
+		for (int m <- [0..myBucketSize]) {
 			
+			// show progress
+			//if (myPrintProgress) {println("getDuplications | Completed: <n+1> ToDo: <(myListSize - n- 1)> (scanning bucket <m-n> of <myListSize-n> done)"); }
+			if (myPrintProgress) {println("getDuplications | Completed: <n+1> ToDo: <(myListSize - n)> (scanning bucket <m> of <myBucketSize> done)"); }
+		
 			// check for overlapping lines, not nessasary next to onother.
-			if ( size(myList[n].lines & myList[m].lines) >= ThresholdDuplication() ) {
+			//if ( size(myList[n].lines & myList[m].lines) >= ThresholdDuplication() ) {
+			if ( size(myList[n].lines & myList[myBucket[m]].lines) >= ThresholdDuplication() ) {
 			
 				// computed list of list of strings of then duplications
-				myTemp = getDuplicatedLines(myList[m].lines, myList[n].lines, ThresholdDuplication());
+				myTemp = getDuplicatedLines(myList[myBucket[m]].lines, myList[n].lines, ThresholdDuplication());
+				
+				// empty the found line so no duplicate, duplicate match is found
+				for (int t <- [0..(size(myTemp))]) {
+					myList[myBucket[m]].lines[myTemp[t][0]] = "";	
+				}
 				
 				// If Temp. result is not empty then add to the myEndResult
-				if (myTemp != []) myEndResult = myEndResult + <myList[n].unit, myList[m].unit, myTemp>;
+				if (myTemp != []) myEndResult += <myList[n].unit, myList[myBucket[m]].unit, myTemp>;
 				
 			}
 		}
@@ -381,12 +360,14 @@ public lrel[loc, loc, list[list[str]]] getDuplications(lrel[loc unit,list[str] l
 	
 	// return the End Result
 	return myEndResult;
+	
 }
 
 /*
 Function computes the number of unit and lines of code that are duplications
 */
-public list[int] sumDuplications(lrel[loc methodN, loc methodM, list[list[str]] lines] myDuplications, bool myDisplay) {
+public list[int] sumDuplications(lrel[loc UnitN, loc UnitM, lrel[int IdxUnitM, int IdxUnitN] Index ] myDuplications, 
+                                 bool myPrintProgress) {
 	
 	set[loc]  myUnitSet   = {};
 	int       myLineCount = 0;
@@ -394,20 +375,13 @@ public list[int] sumDuplications(lrel[loc methodN, loc methodM, list[list[str]] 
 	for (int n <- [0..(size(myDuplications))]) {
 	
 		// add Unit N and Unit M to the set of Units to 
-		myUnitSet = myUnitSet + {myDuplications[n].methodN} + {myDuplications[n].methodM};
+		myUnitSet = myUnitSet + {myDuplications[n].UnitN} + {myDuplications[n].UnitM};
 	
 		// display Unit N and Unit M
-		if (myDisplay) { println("Result[<n>]:\nUnit[n]: <myDuplications[n].methodN>\nUnit[m]: <myDuplications[n].methodM> ");	}
+		if (myPrintProgress) { println("Result[<n>]:\nUnit[n]: <myDuplications[n].UnitN>\nUnit[m]: <myDuplications[n].UnitM> ");	}
 		
-		for (int m <- [0..(size(myDuplications[n].lines))]) {
-	
-			// display lines of duplicated code
-			if (myDisplay) { for (int l <- [0..(size(myDuplications[n].lines[m])-1)]) {	println("Line[<m>][<l>]: <myDuplications[n].lines[m][l]>");	} }
-
-			// sum results
-			myLineCount = myLineCount + size(myDuplications[n].lines[m]);
-	
-		}
+		// sum results
+		myLineCount += size(myDuplications[n].Index);
 	}
 	
 	// return the size of the set of units and the count of the lines.
@@ -485,6 +459,9 @@ public list[str] removeComments(list[str] myListOfStr) {
 	
 	// remove commented lines
 	myListOfStr = [X | X <- myListOfStr, !startsWith(X, "//")];
+	
+	// remove } lines
+	myListOfStr = [X | X <- myListOfStr, !startsWith(X, "}")];
 	
 	return myListOfStr;
 }
