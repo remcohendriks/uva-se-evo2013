@@ -12,8 +12,8 @@ import DateTime;
 import util::Math;
 
 public void genSummeries() {
-	summerySmallsql();
 	summeryHsqldb();
+	summerySmallsql();
 }
 
 /*
@@ -31,7 +31,6 @@ public void Summery(M3 myModel, str myRepportName) {
 	myPath = "Series1/data/";
 	myFile = genResultFileLoc(myPath, myRepportName); 
 
-
 	// extract Project
 	myProject = myModel[0];
 
@@ -45,43 +44,11 @@ public void Summery(M3 myModel, str myRepportName) {
 	appendToFile(myFile, "\r\n");	
 	
 	// Compute Summation Volume of Files
-	//myListOfUnitMetrics           = getListOfUnitMetrics(getListOfUnits(myModel, "file"), false, true, myModel);
-	//myFileVolume                  = ComputeVolume(myListOfUnitMetrics, "Files");
+	myListOfUnitMetrics           = getListOfUnitMetrics(getListOfUnits(myModel, "file"), false, false, myModel);
+	myFileVolume                  = ComputeVolume(myListOfUnitMetrics, "Files");
 	
 	// Print the metrics on Volume on the basis of the Files too myFile.
-	//PrintToFileVolume(myFile, myFileVolume);
-	
-	// remember the end time for computing the metrics
-	//myEnd = now();
-	//myDuration = myEnd - myStart;
-
-	//// write duration to file
-	//appendToFile(myFile, "Time to Compute:\r\n");
-	//printDurationToFile(myFile, myDuration); 
-	//appendToFile(myFile, "\r\n");
-
-	// Compute Metrics on the basis of Classes
-	//myListOfUnitMetrics    = getListOfUnitMetrics(getListOfUnits(myModel, "class"), false, true);
-	//myVolume               = ComputeVolume(myListOfUnitMetrics, "Classes");
-	//myUnitSize             = ComputeUnitSize(myListOfUnitMetrics, "Classes");
-	//myCyclomaticComplexity = ComputeCyclomaticComplexity(myListOfUnitMetrics, "Classes");
-	//myDuplicatedLines      = ComputeDuplicatedLines(myListOfUnitMetrics, "Classes");
-	
-	// Print the metrics on Volume on the basis of the Classes too myFile.
-	//PrintToFileVolume(myFile, myVolume);
-	//PrintToFileUnitSize(myFile, myUnitSize);
-	//PrintToFileCyclomaticComplexity(myFile, myCyclomaticComplexity);
-	//PrintToFileDuplicatedLines(myFile, myDuplicatedLines);
-
-	// remember the end time for computing the metrics
-	//myEnd = now();
-	//myDuration = myEnd - myStart;
-
-//
-	// write duration to file
-	//appendToFile(myFile, "Time to Compute:\r\n");
-	//printDurationToFile(myFile, myDuration); 
-	//appendToFile(myFile, "\r\n");
+	PrintToFileVolume(myFile, myFileVolume);
 
 	// Compute Metrics on the basis of Methods
 	myListOfUnitMetrics    = getListOfUnitMetrics(getListOfUnits(myModel, "method"), false, false, myModel);
@@ -147,7 +114,7 @@ public rel[str Type, lrel[loc UnitN,loc UnitM, lrel[int IdxUnitM,int IdxUnitN] I
            
 	// Compute Duplicated Lines in Classes
 	myListOfUnits     = getUnitsWithLines(myListOfUnitMetrics, ThresholdDuplication());
-	myDuplicatedLines = getDuplications(myListOfUnits, true);
+	myDuplicatedLines = getDuplications(myListOfUnits, false);
 	mySummations      = sumDuplications(myDuplicatedLines, false);
 	myTotal           = FromListOfUnitMetricsSumLinesOfCode(myListOfUnitMetrics, false);
 	myPercentage      = round(((0.0 + mySummations[1]) / (0.0 + myTotal) * 100), 0.001);
@@ -275,7 +242,7 @@ public loc genResultFileLoc(str myPath, str myName) {
 }
 
 @memo public void summerySmallsql() = Summery(genModel(|project://smallsql/|),"SMALLSQL");
-@memo public void summeryHsqldb() = Summery(genModel(|project://hsqldb/|), "HSQLDB");
+@memo public void summeryHsqldb() = Summery(genModel(|project://hsqldb/hsqldb/src/|), "HSQLDB");
 
 
 public str cc2rr(int CC) {
