@@ -36,7 +36,7 @@ public rel[loc UnitLoc,
            rel[int IncludingComments, 
                int ExcludingComments] UnitSize,
            int CyclomaticComplexity] 
-	getUnitMetrics(loc myUnitLoc, bool myPrintResult, M3 myModel) {
+	getUnitMetrics(loc myUnitLoc, bool myPrintResult, myModel) {
 
 	// get lines of Code from the Unit
 	list[str] myLinesOfCode = getListOfStrFromLoc(myUnitLoc);
@@ -46,7 +46,7 @@ public rel[loc UnitLoc,
 	
 	// Compute Cyclomatic Complexity
 	//int myCyclomaticComplexity = getCyclomaticComplexity(getSourceCode(myUnitLoc)); 
-	int myCyclomaticComplexity = getCyclomaticComplexityWithAST(myModel, myUnitLoc); 
+	int myCyclomaticComplexity = getCyclomaticComplexityWithAST(myUnitLoc, myModel); 
 	
 	// print result
 	if (myPrintResult) {
@@ -142,7 +142,8 @@ public list[rel[loc UnitLoc,
            int CyclomaticComplexity]] 
 	getListOfUnitMetrics(list[loc] myListOfUnits, 
 	                     bool myPrintResult,
-	                     bool myPrintProgress, M3 myModel) {
+	                     bool myPrintProgress,
+	                     M3 myModel) {
 
 	list[rel[loc UnitLoc, 
            list[str] LinesOfCode,
@@ -200,8 +201,8 @@ public int getCyclomaticComplexity(str myExperssionString) {
 	return myCounter;	
 }
 
-public int getCyclomaticComplexityWithAST(M3 myModel, loc myUnitLoc) {
-
+public int getCyclomaticComplexityWithAST(loc myUnitLoc, M3 myModel) {
+	
 	myAST = getMethodAST(myUnitLoc, model=myModel);
 
 	myNodes = 0;
@@ -231,7 +232,7 @@ public int getCyclomaticComplexityWithAST(M3 myModel, loc myUnitLoc) {
     	
     	case \methodCall(bool isSuper, str name, list[Expression] arguments):                                            { myNodes += 1; myEdges += 1; }
     	case \methodCall(bool isSuper, Expression receiver, str name, list[Expression] arguments):					     { myNodes += 1; myEdges += 1; }
-    		
+    	//case \methodCall(bool isSuper, Expression receiver, str name, list[Expression] arguments):					     { myNodes += 1; myEdges += 1; }	
 	}
 	
 	return myEdges - myNodes + myConnected;
@@ -266,25 +267,39 @@ public void test_findDupsLines() {
 	list[str] Search = ["A", "B", "C", "D", "E"];
 	int       Threshold = 4;
 	
+	
 	println("Found1    : <getDuplicatedLines(Lines, Search, Threshold)>");
+	println("Found2    : <getDuplicatedLines2(Lines, Search, Threshold)>");
 	println("Threshold : <Threshold>");
 	println("Lines     : <Lines>");
 	println("Search    : <Search>");
 	
 }
-//public list[lrel[int idx, str line]] getDuplications2(list[str] myLines, list[str] mySearch, int myThreshold) {
-public lrel[int IdxUnitM, int IdxUnitN] getDuplicatedLines(list[str] myLines, list[str] mySearch, int myThreshold) {
+
+bool voorgaande(rel[int, int] myItem, myLines, mySearch) {
+
+	if ((myIdxLines >= myMaxLines) || (myIdxSearch >= myMaxSearch)) return false; 
+
+	return (myLines[myIdxLines] == mySearch[myIdxSearch] && myLines[myIdxLines+1] == mySearch[myIdxSearch+1]);
+
+}
+bool vorigegaande(list[str] myLines, list[str] MySearch, int myIdxLines, int myIdxSearch) { 
+	return (myLines[myIdxLines] == mySearch[myIdxSearch] && myLines[myIdxLines-1] == mySearch[myIdxSearch-1]); 
+}
+
+//public lrel[int IdxUnitM, int IdxUnitN] getDuplicatedLines(list[str] myLines, list[str] mySearch, int myThreshold) {
+public lrel[int IdxUnitM, int IdxUnitN] getDuplicatedLines(lrel[int IdxUnitM, int IdxUnitN] myIndexOfLines, int myIndexOfLinesSize, int myThreshold) {
 
 	lrel[int IdxUnitM, int IdxUnitN] myResult = []; 
 	lrel[int IdxUnitM, int IdxUnitN] myReturn = [];
 	
-	lrel[int IdxUnitM, int IdxUnitN] myIndexOfLines = sort([ <L, S> | S <- [0..size(mySearch)], L <- [0..size(myLines)], mySearch[S] == myLines[L], myLines[L] != "" ]);
+	//lrel[int IdxUnitM, int IdxUnitN] myIndexOfLines = [ <L, S> | L <- [0..size(myLines)], S <- [0..size(mySearch)], mySearch[S] == myLines[L], myLines[L] != "" ];
 	
 	int IdxBegin = 0;
+	//int myIndexOfLinesSize = size(myIndexOfLines);
+	//if (myIndexOfLinesSize >= myThreshold) {
 	
-	if (size(myIndexOfLines) >= myThreshold) {
-	
-		for (int n <- [0..(size(myIndexOfLines))]) {
+		for (int n <- [0..myIndexOfLinesSize]) {
 			
 			//println(myIndexOfLines[n]);
 			if (n == IdxBegin) { myResult = [myIndexOfLines[n]]; } 
@@ -295,25 +310,19 @@ public lrel[int IdxUnitM, int IdxUnitN] getDuplicatedLines(list[str] myLines, li
 			} 
 			
 			// detect end of hole list
-			if (n == (size(myIndexOfLines)-1) ) {
+			if ((n+1) == myIndexOfLinesSize) {
 				if (size(myResult) >= myThreshold) {myReturn += myResult; } 
-				myResult = [];
-			} 
-			// end of block			
+			} // end of block			
 			else if (((myIndexOfLines[(n+1)].IdxUnitN -1) - (myIndexOfLines[n].IdxUnitN) != 0) ) {
 				if (size(myResult) >= myThreshold) {myReturn += myResult; } 
 				myResult = [];
 				IdxBegin = n + 1;
 			} 
 		}
-	}
+	//}
 	return myReturn;
-	
 }
 
-/*
-function find duplication in unit lines of code
-*/
 /*
 function find duplication in unit lines of code
 */
@@ -323,6 +332,9 @@ public lrel[loc UnitN, loc UnitM, lrel[int IdxUnitM, int IdxUnitN] Index ] getDu
 	int                            myListSize  = size(myList) - 1;
  	               lrel[int IdxUnitM, int IdxUnitN]  myTemp      = [];
 	lrel[loc UnitN, loc UnitM, lrel[int IdxUnitM, int IdxUnitN] Index] myEndResult = [];
+	
+	lrel[int IdxUnitM, int IdxUnitN] myIndexOfLines = [];
+	PrintCounter = 0;
 	
 	// for ever n-th Unit do
 	for (int n <- [0..myListSize]) {
@@ -336,20 +348,29 @@ public lrel[loc UnitN, loc UnitM, lrel[int IdxUnitM, int IdxUnitN] Index ] getDu
 		for (int m <- [0..myBucketSize]) {
 			
 			// show progress
-			//if (myPrintProgress) {println("getDuplications | Completed: <n+1> ToDo: <(myListSize - n- 1)> (scanning bucket <m-n> of <myListSize-n> done)"); }
-			if (myPrintProgress) {println("getDuplications | Completed: <n+1> ToDo: <(myListSize - n)> (scanning bucket <m> of <myBucketSize> done)"); }
-		
+			if (myPrintProgress) {
+				PrintCounter += 1;
+				if (PrintCounter >= 100) { 
+					PrintCounter = 0; println("getDuplications | Completed: <n+1> ToDo: <(myListSize - n)> (scanning bucket <m> of <myBucketSize> done)"); 
+				}
+			}
+			
 			// check for overlapping lines, not nessasary next to onother.
-			//if ( size(myList[n].lines & myList[m].lines) >= ThresholdDuplication() ) {
-			if ( size(myList[n].lines & myList[myBucket[m]].lines) >= ThresholdDuplication() ) {
+			myIndexOfLines = [ <L, S> | L <- [0..size(myList[myBucket[m]].lines)], 
+			                            S <- [0..size(myList[n].lines)], 
+			                            myList[n].lines[S] == myList[myBucket[m]].lines[L], 
+			                            myList[myBucket[m]].lines[L] != "" ];
+			                            
+			myIndexOfLinesSize = size(myIndexOfLines);
+			if ( size(myIndexOfLines) >= ThresholdDuplication()) {
+			//if ( size(myList[n].lines & myList[myBucket[m]].lines) >= ThresholdDuplication() ) {
 			
 				// computed list of list of strings of then duplications
-				myTemp = getDuplicatedLines(myList[myBucket[m]].lines, myList[n].lines, ThresholdDuplication());
+				//myTemp = getDuplicatedLines(myList[myBucket[m]].lines, myList[n].lines, ThresholdDuplication());
+				myTemp = getDuplicatedLines(myIndexOfLines, myIndexOfLinesSize, ThresholdDuplication());
 				
 				// empty the found line so no duplicate, duplicate match is found
-				for (int t <- [0..(size(myTemp))]) {
-					myList[myBucket[m]].lines[myTemp[t][0]] = "";	
-				}
+				for (int t <- [0..(size(myTemp))]) { myList[myBucket[m]].lines[myTemp[t][0]] = ""; }
 				
 				// If Temp. result is not empty then add to the myEndResult
 				if (myTemp != []) myEndResult += <myList[n].unit, myList[myBucket[m]].unit, myTemp>;
@@ -362,6 +383,7 @@ public lrel[loc UnitN, loc UnitM, lrel[int IdxUnitM, int IdxUnitN] Index ] getDu
 	return myEndResult;
 	
 }
+
 
 /*
 Function computes the number of unit and lines of code that are duplications
@@ -387,7 +409,27 @@ public list[int] sumDuplications(lrel[loc UnitN, loc UnitM, lrel[int IdxUnitM, i
 	// return the size of the set of units and the count of the lines.
 	return [size(myUnitSet), myLineCount];
 }
-
+public list[int] sumDuplications2(lrel[loc UnitN, loc UnitM, list[list[int]] Index] myDuplications, 
+                                 bool myPrintProgress) {
+	
+	set[loc]  myUnitSet   = {};
+	int       myLineCount = 0;
+	
+	for (int n <- [0..(size(myDuplications))]) {
+	
+		// add Unit N and Unit M to the set of Units to 
+		myUnitSet = myUnitSet + {myDuplications[n].UnitN} + {myDuplications[n].UnitM};
+	
+		// display Unit N and Unit M
+		if (myPrintProgress) { println("Result[<n>]:\nUnit[n]: <myDuplications[n].UnitN>\nUnit[m]: <myDuplications[n].UnitM> ");	}
+		
+		// sum results
+		myLineCount += size(myDuplications[n].Index);
+	}
+	
+	// return the size of the set of units and the count of the lines.
+	return [size(myUnitSet), myLineCount];
+}
 
 // generate M3 model
 public M3 genModel(loc id) = createM3FromEclipseProject(id);
@@ -471,15 +513,16 @@ public str getSourceCode(loc locSourceCode) = readFile(locSourceCode);
 
 // format int 2 str by adding number of blacks
 public str int2str(int myInt, int myPositions) {
-	if (myInt < 0 || myInt > 99999 || myPositions < 1 || myPositions > 10) {
+	if (myInt < 0 || myInt > 999999 || myPositions < 1 || myPositions > 10) {
 		return "myInt must be betweeen 0 and 99999, myPositions must be between 1 and 10";
 	}
-	if (myInt >=0 && myInt <=     9) return repeat(" ", (myPositions-1)) + "<myInt>";
-	if (myInt >=0 && myInt <=    99) return repeat(" ", (myPositions-2)) + "<myInt>";
-	if (myInt >=0 && myInt <=   999) return repeat(" ", (myPositions-3)) + "<myInt>";
-	if (myInt >=0 && myInt <=  9999) return repeat(" ", (myPositions-4)) + "<myInt>";
-	if (myInt >=0 && myInt <= 99999) return repeat(" ", (myPositions-5)) + "<myInt>";
-	return "myInt must be betweeen 0 and 99999, myPositions must be between 1 and 10";
+	if (myInt >=0 && myInt <=      9) return repeat(" ", (myPositions-1)) + "<myInt>";
+	if (myInt >=0 && myInt <=     99) return repeat(" ", (myPositions-2)) + "<myInt>";
+	if (myInt >=0 && myInt <=    999) return repeat(" ", (myPositions-3)) + "<myInt>";
+	if (myInt >=0 && myInt <=   9999) return repeat(" ", (myPositions-4)) + "<myInt>";
+	if (myInt >=0 && myInt <=  99999) return repeat(" ", (myPositions-5)) + "<myInt>";
+	if (myInt >=0 && myInt <= 999999) return repeat(" ", (myPositions-6)) + "<myInt>";
+	return "myInt must be betweeen 0 and 999999, myPositions must be between 1 and 10";
 }
 
 // repeat a str for n times
