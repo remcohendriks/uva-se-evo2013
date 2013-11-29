@@ -19,7 +19,7 @@ public void genSummeries() {
 /*
 
 import SigBasis;
-m = genModel(|project://smallsql/|);
+m = genModel(|project://smallsql/src/smallsql/|);
 Summery(m, "Small_SQL");
 
 */
@@ -73,11 +73,11 @@ public void Summery(M3 myModel, str myRepportName) {
 	appendToFile(myFile, "\r\n");
 	
 	// write data result of cc to file
-	//appendToFile(myFile, "Method Data Results Unit Metrics of Unit Size and Cyclomatic Complexity:\r\n");
-	//PrintListOfUnitMetrics(myFile, myListOfUnitMetrics);	
+	appendToFile(myFile, "Method Data Results Unit Metrics of Unit Size and Cyclomatic Complexity:\r\n");
+	PrintListOfUnitMetrics(myFile, myListOfUnitMetrics);	
 	
 	//appendToFile(myFile, "Method Data Results Unit Metrics of Duplications:\r\n");
-	//PrintToFileDuplications(myFile, [*myDuplicatedLines.Duplications][0], false);
+	PrintToFileDuplications(myFile, [*myDuplicatedLines.Duplications][0], false);
 	
 	println(myFile);		
 }
