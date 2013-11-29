@@ -38,6 +38,8 @@ public rel[loc UnitLoc,
            int CyclomaticComplexity] 
 	getUnitMetrics(loc myUnitLoc, bool myPrintResult, myModel) {
 
+	//println(myUnitLoc);
+
 	// get lines of Code from the Unit
 	list[str] myLinesOfCode = getListOfStrFromLoc(myUnitLoc);
 	
@@ -45,9 +47,12 @@ public rel[loc UnitLoc,
 	rel[int IncludingComments, int ExcludingComments] myUnitSize = {<size(myLinesOfCode), size(removeComments(myLinesOfCode))>};
 	
 	// Compute Cyclomatic Complexity
-	//int myCyclomaticComplexity = getCyclomaticComplexity(getSourceCode(myUnitLoc)); 
-	int myCyclomaticComplexity = getCyclomaticComplexityWithAST(myUnitLoc, myModel); 
-	
+	int myCyclomaticComplexity = 1;
+	if (isMethod(myUnitLoc) == true) {
+		//int myCyclomaticComplexity = getCyclomaticComplexity(getSourceCode(myUnitLoc)); 
+		myCyclomaticComplexity = getCyclomaticComplexityWithAST(myUnitLoc, myModel); 
+	}
+		
 	// print result
 	if (myPrintResult) {
 		println("getUnitMetrics | Results for <myUnitLoc>");
@@ -203,7 +208,7 @@ public int getCyclomaticComplexity(str myExperssionString) {
 
 public int getCyclomaticComplexityWithAST(loc myUnitLoc, M3 myModel) {
 	
-	myAST = getMethodAST(myUnitLoc, model=myModel);
+	myAST = getMethodASTEclipse(myUnitLoc, model=myModel);
 
 	myNodes = 0;
 	myEdges = 0;
@@ -235,7 +240,7 @@ public int getCyclomaticComplexityWithAST(loc myUnitLoc, M3 myModel) {
     	//case \methodCall(bool isSuper, Expression receiver, str name, list[Expression] arguments):					     { myNodes += 1; myEdges += 1; }	
 	}
 	
-	return myEdges - myNodes + myConnected;
+	return 1 + (myEdges - myNodes + myConnected);
 		
 }
 
@@ -513,7 +518,7 @@ public str getSourceCode(loc locSourceCode) = readFile(locSourceCode);
 
 // format int 2 str by adding number of blacks
 public str int2str(int myInt, int myPositions) {
-	if (myInt < 0 || myInt > 999999 || myPositions < 1 || myPositions > 10) {
+	if (myInt < 0 || myInt > 99999 || myPositions < 1 || myPositions > 10) {
 		return "myInt must be betweeen 0 and 99999, myPositions must be between 1 and 10";
 	}
 	if (myInt >=0 && myInt <=      9) return repeat(" ", (myPositions-1)) + "<myInt>";
