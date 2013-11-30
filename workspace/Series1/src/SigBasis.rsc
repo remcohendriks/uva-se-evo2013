@@ -205,7 +205,7 @@ public int getCyclomaticComplexity(str myExperssionString) {
 
 	return myCounter;	
 }
-
+/*
 public int getCyclomaticComplexityWithAST(loc myUnitLoc, M3 myModel) {
 	
 	myAST = getMethodASTEclipse(myUnitLoc, model=myModel);
@@ -218,29 +218,51 @@ public int getCyclomaticComplexityWithAST(loc myUnitLoc, M3 myModel) {
 		case \if(Expression condition, Statement thenBranch):                                                            { myEdges += 2; myNodes += 1; }
 	  	case \if(Expression condition, Statement thenBranch, Statement elseBranch):                                      { myEdges += 2; myNodes += 1; } 
 	    case \case(Expression expression):                                                                               { myEdges += 2; myNodes += 1; }
-	    case \defaultCase():                                                                                             { myEdges += 2; myNodes += 1; }
-		case \assert(Expression expression):                                                                             { myNodes += 1; myEdges += 2; }
-        case \assert(Expression expression, Expression message):                                                         { myNodes += 1; myEdges += 2; }
+	    case \defaultCase():                                                                                             { myEdges += 2; myNodes += 1; }//
+		case \assert(Expression expression):                                                                             { myNodes += 1; myEdges += 2; }//
+        case \assert(Expression expression, Expression message):                                                         { myNodes += 1; myEdges += 2; }//
         case \while(Expression condition, Statement body):                                                               { myNodes += 1; myEdges += 2; }
         case \foreach(Declaration parameter, Expression collection, Statement body):                                     { myNodes += 1; myEdges += 2; }
     	case \for(list[Expression] initializers, list[Expression] updaters, Statement body):                             { myNodes += 1; myEdges += 2; }	
-    	case \do(Statement body, Expression condition):                                                                  { myNodes += 1; myEdges += 2; }	
+    	case \do(Statement body, Expression condition):                                                                  { myNodes += 1; myEdges += 2; }//	
    		case \catch(Declaration exception, Statement body):                                                              { myNodes += 1; myEdges += 2; }
-   		case \return(Expression expression):   	                                                                         { myNodes += 1; myConnected += 1; }
-   		case \return():    	                                                                                             { myNodes += 1; myConnected += 1; }
-   		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions):                 { myNodes += 1; myEdges += 1; myConnected += 1; }
+   		case \return(Expression expression):   	                                                                         { myNodes += 1; myConnected += 1; }//
+   		case \return():    	                                                                                             { myNodes += 1; myConnected += 1; }//
+   		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions):                 { myNodes += 1; myEdges += 1; myConnected += 1; }//
         case \for(list[Expression] initializers, Expression condition, list[Expression] updaters, Statement body):       { myNodes += 1; myEdges += 2; }
-    	case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl): { myNodes += 1; myEdges += 1; myConnected += 1; }
+    	case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl): { myNodes += 1; myEdges += 1; myConnected += 1; }//
     	
-    	case \conditional(Expression expression, Expression thenBranch, Expression elseBranch):                          { myNodes += 1; myEdges += 2; }
-    	case \conditional(Expression expression, Expression thenBranch, Expression elseBranch):                          { myNodes += 1; myEdges += 2; }
+    	case \conditional(Expression expression, Expression thenBranch, Expression elseBranch):                          { myNodes += 1; myEdges += 2; }//
+    	case \conditional(Expression expression, Expression thenBranch, Expression elseBranch):                          { myNodes += 1; myEdges += 2; }//
     	
-    	case \methodCall(bool isSuper, str name, list[Expression] arguments):                                            { myNodes += 1; myEdges += 1; }
-    	case \methodCall(bool isSuper, Expression receiver, str name, list[Expression] arguments):					     { myNodes += 1; myEdges += 1; }
+    	case \methodCall(bool isSuper, str name, list[Expression] arguments):                                            { myNodes += 1; myEdges += 1; }//
+    	case \methodCall(bool isSuper, Expression receiver, str name, list[Expression] arguments):					     { myNodes += 1; myEdges += 1; }//
     	//case \methodCall(bool isSuper, Expression receiver, str name, list[Expression] arguments):					     { myNodes += 1; myEdges += 1; }	
 	}
 	
 	return 1 + (myEdges - myNodes + myConnected);
+		
+}
+*/
+
+public int getCyclomaticComplexityWithAST(loc myUnitLoc, M3 myModel) {
+	
+	myAST = getMethodASTEclipse(myUnitLoc, model=myModel);
+
+	int cc = 0;
+	
+	visit(myAST) {
+		case \if(_,_):			cc += 1;
+	  	case \if(_,_,_):		cc += 1; 
+	    case \case(_):			cc += 1;
+        case \while(_,_):		cc += 1;
+        case \foreach(_,_,_):	cc += 1;
+    	case \for(_,_,_):		cc += 1;
+    	case \for(_,_,_,_):		cc += 1;	
+  		case \catch(_,_):		cc += 1;
+	}
+	
+	return cc = 1 + cc;
 		
 }
 
