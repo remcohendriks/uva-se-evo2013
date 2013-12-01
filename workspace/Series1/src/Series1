@@ -1,0 +1,387 @@
+module Series1
+
+import lang::java::m3::Core;
+import lang::java::jdt::m3::Core;
+import lang::java::jdt::m3::AST;
+
+import IO;
+import Set;
+import Relation;
+import List;
+import String;
+import DateTime;
+import util::Math;
+
+import SigRanking;
+
+alias LIST_OF_UNITS   = list[loc];
+alias UNIT_LOC        = loc;
+alias UNIT_SIZE       = rel[int IncludingComments, int ExcludingComments];
+alias UNIT_SIZE_RANK  = str;
+alias UNIT_COMPLEXITY = int;
+alias UNIT_CC_RANK    = str;
+alias UNIT_CODE_LINES = rel[list[str] IncludingComments, list[str] ExcludingComments];
+alias UNIT_METRICS    = rel[UNIT_SIZE       UnitSize,
+                            UNIT_SIZE_RANK  UnitSizeRank,
+                            UNIT_COMPLEXITY Complexity,
+                            UNIT_CC_RANK    ComplexityRank,
+                            UNIT_LOC        UnitLoc, 
+                            UNIT_CODE_LINES LinesOfCode];
+
+alias LIST_OF_UNIT_LINES   = lrel[loc unit,list[str] lines];                            
+alias LIST_OF_DUPLICATIONS = lrel[loc UnitN, loc UnitM, lrel[int IdxUnitM, int IdxUnitN] Index];                            
+alias LIST_OF_INDEXS       = lrel[int IdxUnitM, int IdxUnitN];
+alias MAX_INDEX            = int;
+
+alias COMPUTED_VOLUME       = rel[int Count, int LinesOfCodeIn, int LinesOfCodeEx, str Ranking];
+alias COMPUTED_COMPLEXITY   = rel[list[int] Summation, int Total, str Ranking];
+alias COMPUTED_UNIT_SIZE    = rel[list[int] Summation, int Total, str Ranking];
+alias COMPUTED_DUPLICATIONS = rel[LIST_OF_DUPLICATIONS Duplications, rel[int Units, int Lines] NumberOf, int Total, real Percentage ,str Ranking];
+
+alias CLASS_METRICS = rel[UNIT_LOC            location, 
+                          COMPUTED_VOLUME     volume, 
+                          COMPUTED_UNIT_SIZE  size,
+                          COMPUTED_COMPLEXITY commplexity, 
+                          list[UNIT_METRICS]  metrics]; 
+
+// generate M3 model
+public M3 genModel(loc id) = createM3FromEclipseProject(id);
+
+// get list of location of units filtered on test or junit
+public list[loc] getListOfUnits(M3 myModel, str myUnitType) {
+	return [X | X <- getListOfUnitsWithTestCases(myModel, myUnitType), !(/junit/ := X.path), !(/test/ := X.path)];
+}
+
+// get list of location of units, 
+public list[loc] getListOfUnitsWithTestCases(M3 myModel, str myUnitType) {
+	list[loc] myListOfUnit = [];
+	if (myUnitType == "method") { myListOfUnit = [*methods(myModel)]; }
+	if (myUnitType == "class")  { myListOfUnit = [*classes(myModel)]; }
+	if (myUnitType == "file")   { myListOfUnit = [*files(myModel)]; }
+	return myListOfUnit;
+}
+
+// remove tabs and comments
+public list[str] removeComments(list[str] myListOfStr) {
+	
+	int n = 0;
+	
+	do {
+		// removing comment block
+		if (startsWith(myListOfStr[n], "/*")) { // start of commenting found
+			if (endsWith(myListOfStr[n], "*/")) { // remove commented line
+				myListOfStr = delete(myListOfStr, n);
+			}
+			else {
+				do {// remove lines of comment block
+					myListOfStr = delete(myListOfStr, n);
+				} while (!contains(myListOfStr[n], "*/"));
+			}
+			myListOfStr = delete(myListOfStr, n); // remove line with '*/'
+		} 
+		// increment n
+		n = n + 1;
+	} while (n < size(myListOfStr));
+
+	myListOfStr = [trim(replaceAll(X, "\t","")) | X <- myListOfStr]; // trim line of String and remove /t 'tabs'
+	myListOfStr = [X | X <- myListOfStr, X != ""];                   // remove empty lines
+	myListOfStr = [X | X <- myListOfStr, !startsWith(X, "//")];      // remove commented lines
+	myListOfStr = [X | X <- myListOfStr, !startsWith(X, "}")];       // remove }-only lines
+	
+	return myListOfStr;
+}
+
+public UNIT_METRICS	getUnitMetrics(UNIT_LOC myUnitLoc) {
+	
+	// get lines of Code from the Unit
+	list[str] myListOfstr = readFileLines(myUnitLoc);
+	UNIT_CODE_LINES myLinesOfCode = {<myListOfstr,removeComments(myListOfstr)>};
+	
+	// compute Unit Size
+	UNIT_SIZE      myUnitSize     = {<size(myListOfstr), size(removeComments(myListOfstr))>};
+	UNIT_SIZE_RANK myUnitSizeRank = cc2rr([*myUnitSize.ExcludingComments][0]);
+	
+	// Compute Cyclomatic Complexity
+	UNIT_COMPLEXITY myComplexity     = getCyclomaticComplexityWithAST(myUnitLoc); 
+	UNIT_CC_RANK    myComplexityRank = cc2rr(myComplexity);
+		
+	// combine results
+	return {<myUnitSize, myUnitSizeRank, myComplexity, myComplexityRank, myUnitLoc, myLinesOfCode>};	
+}
+
+public list[UNIT_METRICS] getListOfUnitMetrics(list[loc] myListOfUnits) = [ getUnitMetrics(UL) | UL <- myListOfUnits]; 
+
+public loc       getUnitLoc               (UNIT_METRICS myUnitMetric) = [*myUnitMetric].UnitLoc[0];
+public list[str] getLinesIncludingComments(UNIT_METRICS myUnitMetric) = [*[*myUnitMetric.LinesOfCode][0].IncludingComments][0];
+public list[str] getLinesExcludingComments(UNIT_METRICS myUnitMetric) = [*[*myUnitMetric.LinesOfCode][0].ExcludingComments][0];
+public int       getSizeIncludingComments (UNIT_METRICS myUnitMetric) = [*[*myUnitMetric.UnitSize][0]][0].IncludingComments;
+public int       getSizeExcludingComments (UNIT_METRICS myUnitMetric) = [*[*myUnitMetric.UnitSize][0]][0].ExcludingComments;
+public int       getCyclomaticComplexity  (UNIT_METRICS myUnitMetric) = [*myUnitMetric.Complexity][0];
+
+public list[str] getLinesOfCodeIncludingComments(UNIT_METRICS myUnitMetric) = [*[*myUnitMetric.LinesOfCode][0].IncludingComments][0];
+public list[str] getLinesOfCodeExcludingComments(UNIT_METRICS myUnitMetric) = [*[*myUnitMetric.LinesOfCode][0].ExcludingComments][0];
+
+public int getSumLinesOfCode(list[UNIT_METRICS] myListOfUnitMetrics, bool IncludingComments) {
+                                              
+    if (IncludingComments) return (0 | it + e | int e <- [ getSizeIncludingComments(X) | X <- myListOfUnitMetrics]);                                                              
+	else                   return (0 | it + e | int e <- [ getSizeExcludingComments(X) | X <- myListOfUnitMetrics]);
+	
+}
+
+public UNIT_COMPLEXITY getCyclomaticComplexityWithAST(loc myUnitLoc) {
+	
+	if (isMethod(myUnitLoc) != true) {
+		return 1;
+	}
+	
+	myAST = getMethodASTEclipse(myUnitLoc);
+
+	int cc = 0;
+        
+	visit(myAST) {
+		case \if(_,_):			cc += 1;
+		case \if(_,_,_):		cc += 1; 
+		case \case(_):			cc += 1;
+		case \while(_,_):		cc += 1;
+		case \foreach(_,_,_):	cc += 1;
+		case \for(_,_,_):		cc += 1;
+		case \for(_,_,_,_):		cc += 1;        
+		case \catch(_,_):		cc += 1;
+		case "&&": cc += 1;
+		case "||": cc += 1;
+	}
+        
+    return cc = 1 + cc;
+		
+}
+
+public int ThresholdDuplication() = 6;
+
+public LIST_OF_UNIT_LINES getUnitsWithLines(list[UNIT_METRICS] myListOfUnitMetrics, int myThreshold) {
+	return [ <getUnitLoc(X), getLinesExcludingComments(X)> | X <- myListOfUnitMetrics, getSizeExcludingComments(X) >= myThreshold];
+}
+
+
+/*
+function find duplication in unit lines of code
+*/
+public LIST_OF_DUPLICATIONS getDuplications(LIST_OF_UNIT_LINES myList, bool myPrintProgress) {
+
+	// define local parameters
+	int                  myListSize     = size(myList);
+ 	LIST_OF_INDEXS       myTemp         = [];
+	LIST_OF_DUPLICATIONS myEndResult    = [];
+	LIST_OF_INDEXS       myIndexOfLines = [];
+	
+	PrintCounter = 0;
+	
+	// for ever n-th Unit do
+	for (int n <- [0..myListSize]) {
+	
+		// make bucket list (list of Index of myList
+		myBucket = [ X |  X <- [(n+1)..myListSize], size(myList[n].lines & myList[X].lines) >= ThresholdDuplication() ];  
+		myBucketSize = size(myBucket);
+		
+		for (int m <- [0..myBucketSize]) {
+			
+			// show progress
+			if (myPrintProgress) { PrintCounter += 1; if (PrintCounter >= 1) { PrintCounter = 0; println("getDuplications | Completed: <n+1> ToDo: <(myListSize - n)> (scanning bucket <m> of <myBucketSize> done)"); } }
+			
+			// check for overlapping lines, not nessasary next to onother.
+			myIndexOfLines = [ <L, S> | L <- [0..size(myList[myBucket[m]].lines)], 
+			                            S <- [0..size(myList[n].lines)], 
+			                            myList[n].lines[S] == myList[myBucket[m]].lines[L], 
+			                            myList[myBucket[m]].lines[L] != "" ];
+			                            
+			myIndexOfLinesSize = size(myIndexOfLines);
+			if ( size(myIndexOfLines) >= ThresholdDuplication()) {
+			
+				// computed list of list of strings of then duplications
+				myTemp = getDuplicatedLines(myIndexOfLines, myIndexOfLinesSize, ThresholdDuplication());
+				
+				// empty the found line so no duplicate, duplicate match is found (this is becouse empty lines where removed when remmoving comments)
+				for (int t <- [0..(size(myTemp))]) { myList[myBucket[m]].lines[myTemp[t][0]] = ""; }
+				
+				// If Temp. result is not empty then add to the myEndResult
+				if (myTemp != []) myEndResult += <myList[n].unit, myList[myBucket[m]].unit, myTemp>;
+				
+			}
+		}
+	}
+	
+	// return the End Result
+	return myEndResult;
+	
+}
+
+//public lrel[int IdxUnitM, int IdxUnitN] getDuplicatedLines(list[str] myLines, list[str] mySearch, int myThreshold) {
+public LIST_OF_INDEXS getDuplicatedLines(LIST_OF_INDEXS myIndexOfLines, MAX_INDEX myIndexOfLinesSize, int myThreshold) {
+
+	LIST_OF_INDEXS myResult = []; 
+	LIST_OF_INDEXS myReturn = [];
+		
+	int IdxBegin = 0;
+	
+	for (int n <- [0..myIndexOfLinesSize]) {
+		
+		//println(myIndexOfLines[n]);
+		if (n == IdxBegin) { myResult = [myIndexOfLines[n]]; } 
+		
+		// chekc of last line index is 1 smaller. 
+		else if (myIndexOfLines[n].IdxUnitN == (myIndexOfLines[n-1].IdxUnitN + 1)) {
+			myResult += myIndexOfLines[n];
+		} 
+		
+		// detect end of hole list
+		if ((n+1) == myIndexOfLinesSize) {
+			if (size(myResult) >= myThreshold) {myReturn += myResult; } 
+		} // end of block			
+		else { 
+			if (((myIndexOfLines[(n+1)].IdxUnitN -1) - (myIndexOfLines[n].IdxUnitN) != 0) ) {
+				if (size(myResult) >= myThreshold) {
+					myReturn += myResult; 
+				} 
+				myResult = [];
+				IdxBegin = n + 1;
+			} 
+		}
+	}
+
+	return myReturn;
+}
+
+/*
+Function computes the number of unit and lines of code that are duplications
+*/
+public list[int] sumDuplications(LIST_OF_DUPLICATIONS myDuplications, bool myPrintProgress) {
+	
+	set[loc]  myUnitSet   = {};
+	int       myLineCount = 0;
+	
+	for (int n <- [0..(size(myDuplications))]) {
+	
+		// add Unit N and Unit M to the set of Units to 
+		myUnitSet = myUnitSet + {myDuplications[n].UnitN} + {myDuplications[n].UnitM};
+		
+		// sum results
+		myLineCount += size(myDuplications[n].Index);
+	}
+	
+	// return the size of the set of units and the count of the lines.
+	return [size(myUnitSet), myLineCount];
+}
+
+public COMPUTED_VOLUME ComputeVolume(list[UNIT_METRICS] myListOfUnitMetrics) {
+
+	myCount            = size(myListOfUnitMetrics);
+	myLinesOfCodeIn    = getSumLinesOfCode(myListOfUnitMetrics, true);
+	myLinesOfCodeEx    = getSumLinesOfCode(myListOfUnitMetrics, false);
+	myRanking          = my2rank(loc2my("Java", myLinesOfCodeEx));
+
+	return {<myCount, myLinesOfCodeIn, myLinesOfCodeEx, myRanking>};
+}
+
+public COMPUTED_UNIT_SIZE ComputeUnitSize(list[UNIT_METRICS] myListOfUnitMetrics) {
+
+	my_01_to_10   = getSumLinesOfCode([ X | X <- myListOfUnitMetrics, getSizeExcludingComments(X) >=  0, getSizeExcludingComments(X) <= 10], false);
+	my_11_to_20   = getSumLinesOfCode([ X | X <- myListOfUnitMetrics, getSizeExcludingComments(X) >= 11, getSizeExcludingComments(X) <= 20], false);
+	my_21_to_50   = getSumLinesOfCode([ X | X <- myListOfUnitMetrics, getSizeExcludingComments(X) >= 21, getSizeExcludingComments(X) <= 50], false);
+	my_51_to_inv  = getSumLinesOfCode([ X | X <- myListOfUnitMetrics, getSizeExcludingComments(X) >= 51, getSizeExcludingComments(X) >= 51], false);
+
+	mySummations  = [my_01_to_10, my_11_to_20, my_21_to_50, my_51_to_inv]; 
+	myTotal       = getSumLinesOfCode(myListOfUnitMetrics, false); // excluding comments
+	
+	print("Unit Size : ");
+	myRanking     = summedcc2rank(mySummations, myTotal);
+
+	return {<mySummations, myTotal, myRanking>};
+}
+
+public COMPUTED_COMPLEXITY ComputeCyclomaticComplexity(list[UNIT_METRICS] myListOfUnitMetrics) {
+	
+	my_01_to_10   = getSumLinesOfCode([ X | X <- myListOfUnitMetrics, getCyclomaticComplexity(X) >=  0, getCyclomaticComplexity(X) <= 10], false);
+	my_11_to_20   = getSumLinesOfCode([ X | X <- myListOfUnitMetrics, getCyclomaticComplexity(X) >= 11, getCyclomaticComplexity(X) <= 20], false);
+	my_21_to_50   = getSumLinesOfCode([ X | X <- myListOfUnitMetrics, getCyclomaticComplexity(X) >= 21, getCyclomaticComplexity(X) <= 50], false);
+	my_51_to_inv  = getSumLinesOfCode([ X | X <- myListOfUnitMetrics, getCyclomaticComplexity(X) >= 51, getCyclomaticComplexity(X) >= 51], false);
+	
+	mySummations  = [my_01_to_10, my_11_to_20, my_21_to_50, my_51_to_inv]; 
+	myTotal       = getSumLinesOfCode(myListOfUnitMetrics, false); // excluding comments
+	print("Complexity: ");
+	myRanking     = summedcc2rank(mySummations, myTotal);
+	
+	return {<mySummations, myTotal, myRanking>};
+}
+
+public COMPUTED_DUPLICATIONS ComputeDuplicatedLines(myListOfUnitMetrics) {
+           
+	// Compute Duplicated Lines in Classes
+	myListOfUnits     = getUnitsWithLines(myListOfUnitMetrics, ThresholdDuplication());
+	myDuplicatedLines = getDuplications(myListOfUnits, false);
+	mySummations      = sumDuplications(myDuplicatedLines, false);
+	myTotal           = getSumLinesOfCode(myListOfUnitMetrics, false);
+	myPercentage      = round(((0.0 + mySummations[1]) / (0.0 + myTotal) * 100), 0.001);
+	myRanking         = dup2ranking(mySummations[1], myTotal);
+	
+	return {<myDuplicatedLines,
+	         {<mySummations[0], 
+	           mySummations[1]>}, 
+	         myTotal, 
+	         myPercentage, 
+	         myRanking>
+	         };		
+}
+
+public list[CLASS_METRICS] getClassesWithMethodMetrics(M3 myModel) {
+	
+	myListOfClasses = getListOfUnits(myModel, "class");
+	
+	myListOfClassesSize = size(myListOfClasses);
+	
+	list[CLASS_METRICS] myResult = [];
+	
+	for (int n <- [0..myListOfClassesSize]) {
+	
+		println("Class: <myListOfClasses[n]>");
+	
+		myListOfUnitMetrics =[ getUnitMetrics(X[1]) | X <- myModel@containment, X[0]==myListOfClasses[n], isMethod(X[1])];
+		
+		COMPUTED_VOLUME     myVolume     = ComputeVolume(myListOfUnitMetrics);
+		COMPUTED_UNIT_SIZE  mySize       = ComputeUnitSize(myListOfUnitMetrics);
+		COMPUTED_COMPLEXITY myComplexity = ComputeCyclomaticComplexity(myListOfUnitMetrics);
+		
+		myResult += {<myListOfClasses[n], myVolume, mySize, myComplexity, myListOfUnitMetrics>};
+		
+	}
+	return myResult;
+}
+
+/*
+
+alias CLASS_METRICS = rel[UNIT_LOC            location, 
+                          COMPUTED_VOLUME     volume, 
+                          COMPUTED_UNIT_SIZE  size,
+                          COMPUTED_COMPLEXITY commplexity, 
+                          list[UNIT_METRICS]  metrics]; 
+
+alias COMPUTED_VOLUME       = rel[int Count, int LinesOfCodeIn, int LinesOfCodeEx, str Ranking];                          
+alias COMPUTED_COMPLEXITY   = rel[list[int] Summation, int Total, str Ranking];
+alias COMPUTED_UNIT_SIZE    = rel[list[int] Summation, int Total, str Ranking];
+alias COMPUTED_DUPLICATIONS = rel[LIST_OF_DUPLICATIONS Duplications, rel[int Units, int Lines] NumberOf, int Total, real Percentage ,str Ranking];
+*/
+
+public COMPUTED_UNIT_SIZE getComputedSize      (CLASS_METRICS myClassMetrics) = [*myClassMetrics][0].size;
+public list[int]          getComputedSizeSummation(COMPUTED_UNIT_SIZE mySize) = [*mySize.Summation][0];
+public int                getComputedSizeTotal    (COMPUTED_UNIT_SIZE mySize) = [*mySize.Total][0];
+public str                getComputedSizeRanking  (COMPUTED_UNIT_SIZE mySize) = [*mySize.Ranking][0];
+
+public COMPUTED_COMPLEXITY getComputedComplexity            (CLASS_METRICS myClassMetrics) = [*myClassMetrics][0].complexity;
+public list[int]           getComputedComplexitySummation(COMPUTED_UNIT_SIZE myComplexity) = [*myComplexity.Summation][0];
+public int                 getComputedComplexityTotal    (COMPUTED_UNIT_SIZE myComplexity) = [*myComplexity.Total][0];
+public str                 getComputedComplexityRanking  (COMPUTED_UNIT_SIZE myComplexity) = [*myComplexity.Ranking][0];
+
+public COMPUTED_VOLUME getComputedVolume          (CLASS_METRICS myClassMetrics) = [*myClassMetrics][0].volume;
+public int             getComputedVolumeCountOfMethods(COMPUTED_VOLUME myVolume) = [*myVolume.Count][0];
+public int             getComputedVolumeLinesOfCodeIn (COMPUTED_VOLUME myVolume) = [*myVolume.LinesOfCodeIn][0];
+public int             getComputedVolumeLinesOfCodeEx (COMPUTED_VOLUME myVolume) = [*myVolume.LinesOfCodeEx][0];
+public str             getComputedVolumeRanking       (COMPUTED_VOLUME myVolume) = [*myVolume.Ranking][0];
+
